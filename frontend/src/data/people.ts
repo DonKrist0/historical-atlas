@@ -3,6 +3,7 @@ export type GroupId = 'rulers' | 'family' | 'close' | 'contemporaries' | 'clergy
 export interface PersonRelation {
   personId: string
   role: string
+  familyRole?: 'mother' | 'father' | 'spouse'
   startYear?: number
   endYear?: number
 }

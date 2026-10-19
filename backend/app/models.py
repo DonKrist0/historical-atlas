@@ -90,6 +90,7 @@ class PersonRelation(Base):
     source_id: Mapped[str] = mapped_column(ForeignKey("people.id", ondelete="CASCADE"))
     person_id: Mapped[str] = mapped_column(ForeignKey("people.id", ondelete="CASCADE"))
     role: Mapped[str] = mapped_column(String(100))
+    family_role: Mapped[str | None] = mapped_column(String(20))
     start_year: Mapped[int | None] = mapped_column(Integer)
     end_year: Mapped[int | None] = mapped_column(Integer)
 

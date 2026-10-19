@@ -4,10 +4,12 @@
   import { peopleApi } from './api/people'
   import GenealogyPage from './components/GenealogyPage.vue'
   import PersonDetails from './components/PersonDetails.vue'
+  import PersonPicker from './components/PersonPicker.vue'
   import RelationsGraph from './components/RelationsGraph.vue'
   import { isStatic } from './config'
   import { type GroupId, groups, type Person, type PersonRelation } from './data/people'
   import { collectionPeriod } from './utils/collectionPeriod'
+  import { combineFamilyRelations, emptyFamily, type FamilyRole, familySlots, patronymicSuggestions, splitFamilyRelations } from './utils/familyForm'
   import { relationPeriod } from './utils/relationPeriod'
   import { packTimelineColumns } from './utils/timeline'
 
@@ -173,6 +175,15 @@
   const dialog = ref(false)
   const selected = ref<Person | null>(null)
   const form = reactive({ firstName: '', lastName: '', patronymic: '', country: '', region: '', dynasty: '', start: Number.NaN, end: Number.NaN, group: 'family' as GroupId, note: '', biography: '', sources: '', before: false, relations: [] as PersonRelation[] })
+  const family = reactive(emptyFamily())
+  const suggestedPatronymics = computed(() => patronymicSuggestions(people.value.find(person => person.id === family.father.personId)?.firstName ?? ''))
+  function setFamilyMember (key: FamilyRole, personId: string) {
+    if (family[key].personId === personId) return
+    const roles = key === 'spouse' ? ['муж', 'жена', 'супруг', 'супруга'] : ['сын', 'дочь', 'ребенок']
+    const existing = form.relations.findIndex(relation => relation.personId === personId && roles.includes(relation.role.trim().toLocaleLowerCase('ru').replaceAll('ё', 'е')))
+    const prior = existing === -1 ? undefined : form.relations.splice(existing, 1)[0]
+    family[key] = { ...(prior ?? { personId, role: key === 'spouse' ? 'Супруг' : 'Ребёнок' }), familyRole: key }
+  }
   const formFullName = computed(() => [form.lastName, form.firstName, form.patronymic].map(part => part.trim()).filter(Boolean).join(' '))
   function savedOptions (field: 'country' | 'region' | 'dynasty') {
     const values = people.value.map(person => person[field]?.trim()).filter((value): value is string => !!value)
@@ -288,12 +299,15 @@
   function openForm () {
     if (!canEdit.value || !loaded.value || loading.value || importing.value) return
     selected.value = null
+    Object.assign(family, emptyFamily())
     Object.assign(form, { firstName: '', lastName: '', patronymic: '', country: '', region: '', dynasty: '', start: Number.NaN, end: Number.NaN, group: 'family', note: '', biography: '', sources: '', before: false, relations: [] })
     formError.value = ''
     dialog.value = true
   }
   function editPerson (person: Person) {
     selected.value = person
+    const split = splitFamilyRelations(person.relations ?? [])
+    Object.assign(family, split.family)
     Object.assign(form, {
       firstName: person.firstName ?? person.name, lastName: person.lastName ?? '', patronymic: person.patronymic ?? '',
       country: person.country ?? '', region: person.region ?? '', dynasty: person.dynasty ?? '',
@@ -301,7 +315,7 @@
       note: person.note, before: person.before ?? false,
       biography: person.biography ?? '',
       sources: person.sources ?? '',
-      relations: (person.relations ?? []).map(relation => ({ ...relation })),
+      relations: split.additional,
     })
     formError.value = ''
     dialog.value = true
@@ -317,7 +331,13 @@
       formError.value = 'Укажите целые годы от 1 до 2100. Конец периода должен быть не раньше начала.'
       return
     }
-    const { relations, ...details } = form
+    const { relations: additional, ...details } = form
+    const relations = combineFamilyRelations(family, additional)
+    const chosenFamily = familySlots.map(({ key }) => family[key].personId).filter(Boolean)
+    if (new Set(chosenFamily).size !== chosenFamily.length) {
+      formError.value = 'Мать, отец и супруг должны быть разными персонами.'
+      return
+    }
     const relationKeys = new Set<string>()
     for (const relation of relations) {
       if (!people.value.some(person => person.id === relation.personId) || relation.personId === selected.value?.id) {
@@ -660,20 +680,54 @@
                 </section>
               </div>
 
+              <fieldset class="relationship-fields family-fields">
+                <legend>Семья <span class="optional">необязательно</span></legend>
+                <p>Выберите мать, отца и супруга или супругу текущей персоны. Каждое поле можно оставить пустым.</p>
+
+                <div class="family-pickers">
+                  <div v-for="slot in familySlots" :key="slot.key" class="family-picker">
+                    <PersonPicker
+                      :disabled="saving"
+                      :label="slot.label"
+                      :model-value="family[slot.key].personId"
+                      :people="relatedPeople"
+                      @update:model-value="setFamilyMember(slot.key, $event)"
+                    />
+
+                    <small v-if="family[slot.key].startYear !== undefined || family[slot.key].endYear !== undefined">{{ relationPeriod(family[slot.key]) }}</small>
+                  </div>
+                </div>
+
+                <div v-if="suggestedPatronymics.length > 0" class="patronymic-suggestions">
+                  <span>Отчество по имени отца:</span>
+
+                  <button
+                    v-for="suggestion in suggestedPatronymics"
+                    :key="suggestion"
+                    :aria-pressed="form.patronymic === suggestion"
+                    type="button"
+                    @click="form.patronymic = suggestion"
+                  >{{ suggestion }}</button>
+
+                  <small>Выберите подходящий вариант. Поле «Отчество» также можно заполнить вручную.</small>
+                </div>
+              </fieldset>
+
               <fieldset class="relationship-fields">
-                <legend>Связи с персонами <span class="optional">необязательно</span></legend>
+                <legend>Дополнительные связи <span class="optional">необязательно</span></legend>
                 <p id="relationship-direction">Роль относится к {{ formFullName || 'текущей персоне' }}. Например, добавляя ребёнка в карточку отца, выберите роль «Отец». Можно добавить несколько связей.</p>
                 <div v-if="form.group === 'close'" class="service-help"><strong>Чьим сподвижником был этот человек?</strong><p>Добавьте каждого правителя отдельной связью и укажите годы службы. Периоды могут пересекаться; неизвестные даты оставьте пустыми.</p><button class="add-relation-button" :disabled="!relatedPeople.some(person => person.group === 'rulers')" type="button" @click="form.relations.push({ personId: '', role: 'Сподвижник' })"><i class="mdi mdi-crown-outline" />Добавить правителя и период службы</button></div>
 
                 <div v-for="(relation, index) in form.relations" :key="index" class="relationship-row">
                   <div class="relationship-row-heading"><span>Связь {{ index + 1 }}</span><button :aria-label="`Удалить связь ${index + 1}`" type="button" @click="form.relations.splice(index, 1)"><i aria-hidden="true" class="mdi mdi-close" /> Удалить</button></div>
 
-                  <label>{{ relation.role.trim().toLocaleLowerCase('ru') === 'сподвижник' ? 'При каком правителе' : 'Другая персона атласа' }}
-                    <select v-model="relation.personId" aria-describedby="relationship-direction" required>
-                      <option disabled value="">Выберите персону</option>
-                      <option v-for="person in relatedPeople.filter(person => relation.role.trim().toLocaleLowerCase('ru') !== 'сподвижник' || person.group === 'rulers' || person.id === relation.personId)" :key="person.id" :value="person.id">{{ person.name }} ({{ person.start }}–{{ person.end }})</option>
-                    </select>
-                  </label>
+                  <PersonPicker
+                    v-model="relation.personId"
+                    :disabled="saving"
+                    :label="relation.role.trim().toLocaleLowerCase('ru') === 'сподвижник' ? 'При каком правителе' : 'Другая персона атласа'"
+                    :people="relatedPeople.filter(person => relation.role.trim().toLocaleLowerCase('ru') !== 'сподвижник' || person.group === 'rulers' || person.id === relation.personId)"
+                    required
+                  />
 
                   <label>Роль текущей персоны
                     <input
@@ -710,7 +764,7 @@
                 </div>
 
                 <datalist id="relationship-roles"><option v-for="role in relationshipRoles" :key="role" :value="role" /></datalist>
-                <button class="add-relation-button" :disabled="relatedPeople.length === 0" type="button" @click="form.relations.push({ personId: '', role: '' })"><i aria-hidden="true" class="mdi mdi-plus" />Добавить связь</button>
+                <button class="add-relation-button" :disabled="relatedPeople.length === 0" type="button" @click="form.relations.push({ personId: '', role: '' })"><i aria-hidden="true" class="mdi mdi-plus" />Добавить дополнительную связь</button>
 
                 <div v-if="incomingRelations.length > 0" class="incoming-relations">
                   <h3>Связи, указанные у других персон</h3>

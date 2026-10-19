@@ -8,6 +8,39 @@ def payload(**changes):
     return dict(name="Иван", firstName="Иван", start=1380, end=1450, group="family", **changes)
 
 
+def test_family_relations_persist_export_and_clear(client):
+    relations = [{"personId": "dmitry", "role": "Ребёнок", "familyRole": "father"}]
+    response = client.post("/api/people", json=payload(relations=relations))
+    assert response.status_code == 201, response.text
+    person = response.json()
+    assert person["relations"] == relations
+    assert client.get(f"/api/people/{person['id']}").json()["relations"] == relations
+    exported = client.get("/api/people").json()
+    assert client.post("/api/people/import", json={"people": exported}).status_code == 200
+    assert client.get(f"/api/people/{person['id']}").json()["relations"] == relations
+    response = client.put(f"/api/people/{person['id']}", json=payload(relations=[]))
+    assert response.status_code == 200
+    assert response.json()["relations"] == []
+
+
+@pytest.mark.parametrize("relations", [
+    [{"personId": "dmitry", "role": "Брат", "familyRole": "father"}],
+    [{"personId": "dmitry", "role": "Сын", "familyRole": "spouse"}],
+    [{"personId": "dmitry", "role": "Сын", "familyRole": "unknown"}],
+    [
+        {"personId": "dmitry", "role": "Сын", "familyRole": "father"},
+        {"personId": "dmitry", "role": "Дочь", "familyRole": "father"},
+    ],
+    [
+        {"personId": "dmitry", "role": "Сын", "familyRole": "father"},
+        {"personId": "dmitry", "role": "Ребёнок", "familyRole": "mother"},
+    ],
+])
+def test_invalid_family_slots_do_not_write(client, relations):
+    assert client.post("/api/people", json=payload(relations=relations)).status_code == 422
+    assert len(client.get("/api/people").json()) == 9
+
+
 def test_seed_health_and_legacy_names(client):
     assert client.get("/api/health").json() == {"status": "ok"}
     people = client.get("/api/people").json()

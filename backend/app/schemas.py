@@ -20,11 +20,17 @@ class ApiModel(BaseModel):
 class Relation(ApiModel):
     person_id: Identifier
     role: str = Field(min_length=1, max_length=100)
+    family_role: Literal["mother", "father", "spouse"] | None = None
     start_year: int | None = Field(default=None, ge=1, le=2100, strict=True)
     end_year: int | None = Field(default=None, ge=1, le=2100, strict=True)
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
+        role = self.role.casefold().replace("ё", "е")
+        if self.family_role in ("mother", "father") and role not in ("сын", "дочь", "ребенок"):
+            raise ValueError("Для матери или отца роль текущей персоны — сын, дочь или ребёнок.")
+        if self.family_role == "spouse" and role not in ("муж", "жена", "супруг", "супруга"):
+            raise ValueError("Для супружеской связи выберите роль супруга или супруги.")
         if self.start_year is not None and self.end_year is not None:
             if self.end_year < self.start_year:
                 raise ValueError("Конец связи должен быть не раньше начала.")
@@ -59,6 +65,11 @@ class PersonInput(ApiModel):
         keys = [(relation.person_id, relation.role.casefold()) for relation in self.relations]
         if len(keys) != len(set(keys)):
             raise ValueError("Одинаковая связь с этой персоной уже добавлена.")
+        family = [relation for relation in self.relations if relation.family_role is not None]
+        if len({relation.family_role for relation in family}) != len(family):
+            raise ValueError("В отдельных полях можно указать одну мать, одного отца и супруга.")
+        if len({relation.person_id for relation in family}) != len(family):
+            raise ValueError("Мать, отец и супруг должны быть разными персонами.")
         return self
 
 

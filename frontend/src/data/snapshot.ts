@@ -15,6 +15,7 @@ export function parseSnapshot (data: unknown): Person[] {
       && (person.relations === undefined || (Array.isArray(person.relations) && person.relations.every(
         (relation: PersonRelation) =>
           relation && typeof relation.personId === 'string' && typeof relation.role === 'string'
+          && (relation.familyRole === undefined || ['mother', 'father', 'spouse'].includes(relation.familyRole))
           && [relation.startYear, relation.endYear].every(year => year === undefined || (Number.isInteger(year) && year >= 1 && year <= 2100)),
       ))))) {
     throw new Error('Некорректный файл коллекции. Обновите JSON и пересоберите сайт.')

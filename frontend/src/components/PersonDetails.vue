@@ -57,7 +57,8 @@
 
         <div v-else class="details-relations">
           <div v-for="(relation, index) in outgoing" :key="`out-${index}`" class="details-relation">
-            <p><span>{{ person.name }}</span> — <strong>{{ relation.role }}</strong> →</p>
+            <p v-if="relation.familyRole"><strong>{{ { mother: 'Мать', father: 'Отец', spouse: 'Супруг / супруга' }[relation.familyRole] }}</strong></p>
+            <p v-else><span>{{ person.name }}</span> — <strong>{{ relation.role }}</strong> →</p>
             <button v-if="relation.target" class="details-person-link" @click="emit('select', relation.target)">{{ relation.target.name }}<i aria-hidden="true" class="mdi mdi-arrow-top-right" /></button>
             <span v-else class="details-empty">Персона недоступна</span>
             <small>{{ relationPeriod(relation) }}</small>
