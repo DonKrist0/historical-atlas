@@ -1,0 +1,204 @@
+[
+  {
+    "name": "Боброк Дмитрий",
+    "firstName": "Дмитрий",
+    "lastName": "Боброк",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1390,
+    "group": "close",
+    "note": "Воевода",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "bobrok"
+  },
+  {
+    "name": "Донской Дмитрий Иванович",
+    "firstName": "Дмитрий",
+    "lastName": "Донской",
+    "patronymic": "Иванович",
+    "country": "Россия",
+    "region": "",
+    "dynasty": "Всеволодович",
+    "start": 1350,
+    "end": 1389,
+    "group": "rulers",
+    "note": "Великий князь московский",
+    "biography": "",
+    "before": false,
+    "relations": [
+      {
+        "personId": "vasily",
+        "role": "Отец"
+      },
+      {
+        "personId": "evdokia",
+        "role": "Муж"
+      }
+    ],
+    "id": "dmitry"
+  },
+  {
+    "name": "Евдокия Дмитриевна",
+    "firstName": "Евдокия",
+    "lastName": "",
+    "patronymic": "Дмитриевна",
+    "country": "Россия",
+    "region": "",
+    "dynasty": "",
+    "start": 1353,
+    "end": 1407,
+    "group": "family",
+    "note": "Супруга Дмитрия Донского",
+    "biography": "",
+    "before": false,
+    "relations": [],
+    "id": "evdokia"
+  },
+  {
+    "name": "Фёдор Кошка",
+    "firstName": "Фёдор Кошка",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1407,
+    "group": "close",
+    "note": "Фёдор Андреевич",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      },
+      {
+        "personId": "vasily",
+        "role": "Сподвижник",
+        "startYear": 1389
+      }
+    ],
+    "id": "koshka"
+  },
+  {
+    "name": "Иван Квашня",
+    "firstName": "Иван Квашня",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1390,
+    "group": "close",
+    "note": "Иван Родионович",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "kvashnya"
+  },
+  {
+    "name": "Фёдор Свибло",
+    "firstName": "Фёдор Свибло",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1400,
+    "group": "close",
+    "note": "Фёдор Андреевич",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "sviblo"
+  },
+  {
+    "name": "Василий I Дмитриевич",
+    "firstName": "Василий I",
+    "lastName": "",
+    "patronymic": "Дмитриевич",
+    "country": "Россия",
+    "region": "",
+    "dynasty": "Всеволодович",
+    "start": 1371,
+    "end": 1425,
+    "group": "rulers",
+    "note": "Великий князь московский",
+    "biography": "",
+    "before": false,
+    "relations": [
+      {
+        "personId": "evdokia",
+        "role": "Сын"
+      }
+    ],
+    "id": "vasily"
+  },
+  {
+    "name": "Тимофей Вельяминов",
+    "firstName": "Тимофей Вельяминов",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1390,
+    "group": "close",
+    "note": "Тимофей Васильевич",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "velyaminov"
+  },
+  {
+    "name": "Храбрый Владимир",
+    "firstName": "Владимир",
+    "lastName": "Храбрый",
+    "patronymic": "",
+    "country": "Россия",
+    "region": "",
+    "dynasty": "",
+    "start": 1353,
+    "end": 1410,
+    "group": "family",
+    "note": "Князь серпуховской",
+    "biography": "",
+    "before": false,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Брат"
+      }
+    ],
+    "id": "vladimir"
+  }
+]

@@ -1,0 +1,404 @@
+[
+  {
+    "name": "Боброк Дмитрий",
+    "firstName": "Дмитрий",
+    "lastName": "Боброк",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1390,
+    "group": "close",
+    "note": "Воевода",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "bobrok"
+  },
+  {
+    "name": "Донской Дмитрий Иванович",
+    "firstName": "Дмитрий",
+    "lastName": "Донской",
+    "patronymic": "Иванович",
+    "country": "Россия",
+    "region": "Москва",
+    "dynasty": "Всеволодович",
+    "start": 1350,
+    "end": 1389,
+    "group": "rulers",
+    "note": "Великий князь московский",
+    "biography": "Князь московский в 1359–1389 годах, великий князь владимирский в 1362–1389 годах. Сын Ивана II Красного и Александры; супруг Евдокии Дмитриевны. Руководил русскими силами в Куликовской битве 1380 года. Василий I, Юрий и Андрей — его сыновья; это только часть детей князя.\n\nИсточники (проверено 19.10.2026):\nhttps://bigenc.ru/c/dmitrii-ivanovich-velikii-kniaz-vladimirskii-2f57ba?ysclid=mbdbmh6b2p948335714\nhttps://kreml.ru/storage/mediafiles/files/researches/48595/sbornik30st10.pdf",
+    "before": false,
+    "relations": [
+      {
+        "personId": "vasily",
+        "role": "Отец"
+      },
+      {
+        "personId": "evdokia",
+        "role": "Муж",
+        "startYear": 1366,
+        "endYear": 1389
+      }
+    ],
+    "id": "dmitry"
+  },
+  {
+    "name": "Евдокия Дмитриевна",
+    "firstName": "Евдокия",
+    "lastName": "",
+    "patronymic": "Дмитриевна",
+    "country": "Россия",
+    "region": "Москва",
+    "dynasty": "Рюриковичи (суздальская ветвь)",
+    "start": 1353,
+    "end": 1407,
+    "group": "family",
+    "note": "Супруга Дмитрия Донского",
+    "biography": "Дочь суздальского князя Дмитрия Константиновича. Супруга Дмитрия Донского с 1366 года, мать Василия I, Юрия и Андрея (список детей здесь неполный). Приняла монашество с именем Евфросиния в 1407 году.\n\nИсточники (проверено 19.10.2026):\nhttps://pravoslavie.ru/160467.html\nhttps://bigenc.ru/l/istoriia-belozerskogo-kniazhestva-c96101",
+    "before": false,
+    "relations": [],
+    "id": "evdokia"
+  },
+  {
+    "name": "Фёдор Кошка",
+    "firstName": "Фёдор Кошка",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1407,
+    "group": "close",
+    "note": "Фёдор Андреевич",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      },
+      {
+        "personId": "vasily",
+        "role": "Сподвижник",
+        "startYear": 1389
+      }
+    ],
+    "id": "koshka"
+  },
+  {
+    "name": "Иван Квашня",
+    "firstName": "Иван Квашня",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1390,
+    "group": "close",
+    "note": "Иван Родионович",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "kvashnya"
+  },
+  {
+    "name": "Фёдор Свибло",
+    "firstName": "Фёдор Свибло",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1400,
+    "group": "close",
+    "note": "Фёдор Андреевич",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "sviblo"
+  },
+  {
+    "name": "Василий I Дмитриевич",
+    "firstName": "Василий I",
+    "lastName": "",
+    "patronymic": "Дмитриевич",
+    "country": "Россия",
+    "region": "",
+    "dynasty": "Всеволодович",
+    "start": 1371,
+    "end": 1425,
+    "group": "rulers",
+    "note": "Великий князь московский",
+    "biography": "",
+    "before": false,
+    "relations": [
+      {
+        "personId": "evdokia",
+        "role": "Сын"
+      }
+    ],
+    "id": "vasily"
+  },
+  {
+    "name": "Тимофей Вельяминов",
+    "firstName": "Тимофей Вельяминов",
+    "lastName": "",
+    "patronymic": "",
+    "country": "",
+    "region": "",
+    "dynasty": "",
+    "start": 1350,
+    "end": 1390,
+    "group": "close",
+    "note": "Тимофей Васильевич",
+    "biography": "",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сподвижник"
+      }
+    ],
+    "id": "velyaminov"
+  },
+  {
+    "name": "Храбрый Владимир",
+    "firstName": "Владимир",
+    "lastName": "Храбрый",
+    "patronymic": "",
+    "country": "Россия",
+    "region": "Серпухов",
+    "dynasty": "",
+    "start": 1353,
+    "end": 1410,
+    "group": "family",
+    "note": "Князь серпуховской",
+    "biography": "Владимир Андреевич Храбрый — серпуховской князь, двоюродный брат Дмитрия Донского. Участвовал в Куликовской битве 1380 года; вместе с Дмитрием Боброком командовал засадным полком. Обозначение «брат» в первоначальном тестовом наборе уточнено до «двоюродный брат».\n\nИсточники (проверено 19.10.2026):\nhttps://bigenc.ru/c/vladimir-andreevich-udel-nyi-kniaz-serpukhovskoi-f8e7e8",
+    "before": false,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Двоюродный брат"
+      }
+    ],
+    "id": "vladimir"
+  },
+  {
+    "name": "Александра",
+    "firstName": "Александра",
+    "lastName": "",
+    "patronymic": "",
+    "country": "Русь",
+    "region": "Москва",
+    "dynasty": "",
+    "start": 1345,
+    "end": 1364,
+    "group": "family",
+    "note": "Мать Дмитрия Донского; год рождения неизвестен",
+    "biography": "Вторая супруга Ивана II Красного, мать Дмитрия Донского и Ивана Малого. Брак заключён в 1345 году; умерла 26 декабря 1364 года. Происхождение и отчество достоверно не установлены. Начало «до 1345» — верхняя граница по известному браку, а не год рождения.\n\nИсточники (проверено 19.10.2026):\nhttps://kreml.ru/storage/mediafiles/files/researches/48595/sbornik30st10.pdf",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Мать"
+      },
+      {
+        "personId": "ivan-maly",
+        "role": "Мать"
+      }
+    ],
+    "id": "alexandra-mother-dmitry"
+  },
+  {
+    "name": "Алексий",
+    "firstName": "Алексий",
+    "lastName": "",
+    "patronymic": "",
+    "country": "Русь",
+    "region": "Москва",
+    "dynasty": "",
+    "start": 1305,
+    "end": 1378,
+    "group": "clergy",
+    "note": "Митрополит; наставник Дмитрия; рождение спорно",
+    "biography": "Митрополит Киевский и всея Руси в 1354–1378 годах. Наставник малолетнего Дмитрия Донского, участвовал в управлении княжеством. Год рождения спорен: традиционная датировка около 1293 года, встречаются более поздние; на шкале показана верхняя граница «до 1305», а не точный год рождения. Границы наставничества не установлены.\n\nИсточники (проверено 19.10.2026):\nhttps://azbyka.ru/otechnik/bibliog/slovar-knizhnikov-i-knizhnosti-drevnej-rusi/15\nhttps://gufo.me/dict/history_encyclopedia/АЛЕКСЕЙ\nhttps://ru.wikipedia.org/wiki/Алексий_(святитель)",
+    "before": true,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Наставник"
+      }
+    ],
+    "id": "alexy-metropolitan"
+  },
+  {
+    "name": "Андрей Дмитриевич",
+    "firstName": "Андрей",
+    "lastName": "",
+    "patronymic": "Дмитриевич",
+    "country": "Русь",
+    "region": "Можайск",
+    "dynasty": "Рюриковичи (московская ветвь)",
+    "start": 1382,
+    "end": 1432,
+    "group": "family",
+    "note": "Сын Дмитрия; князь можайский и белозерский",
+    "biography": "Сын Дмитрия Донского и Евдокии Дмитриевны. Владел Можайском и Белоозером; участвовал в обороне Москвы во время нашествия Едигея в 1408 году.\n\nИсточники (проверено 19.10.2026):\nhttps://bigenc.ru/l/istoriia-belozerskogo-kniazhestva-c96101",
+    "before": false,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сын"
+      },
+      {
+        "personId": "evdokia",
+        "role": "Сын"
+      }
+    ],
+    "id": "andrei-dmitrievich"
+  },
+  {
+    "name": "Дмитрий Суздальский Константинович",
+    "firstName": "Дмитрий Суздальский",
+    "lastName": "",
+    "patronymic": "Константинович",
+    "country": "Русь",
+    "region": "Суздаль",
+    "dynasty": "Рюриковичи (суздальская ветвь)",
+    "start": 1322,
+    "end": 1383,
+    "group": "family",
+    "note": "Отец Евдокии; тесть Дмитрия Донского",
+    "biography": "Князь суздальский и нижегородский, отец Евдокии Дмитриевны. Его дочь вышла замуж за Дмитрия Донского в 1366 году. Начало шкалы 1322 года принято по пособию ННГУ; в справочниках встречаются также 1323 и 1324 годы рождения. Умер в 1383 году.\n\nИсточники (проверено 19.10.2026):\nhttps://www.unn.ru/books/met_files/Historia.pdf\nhttps://pravoslavie.ru/160467.html",
+    "before": false,
+    "relations": [
+      {
+        "personId": "evdokia",
+        "role": "Отец"
+      }
+    ],
+    "id": "dmitry-konstantinovich-suzdal"
+  },
+  {
+    "name": "Иван II Красный Иванович",
+    "firstName": "Иван II Красный",
+    "lastName": "",
+    "patronymic": "Иванович",
+    "country": "Русь",
+    "region": "Москва",
+    "dynasty": "Рюриковичи (московская ветвь)",
+    "start": 1326,
+    "end": 1359,
+    "group": "rulers",
+    "note": "Отец Дмитрия Донского; князь московский",
+    "biography": "Московский князь с 1353 года, великий князь владимирский с 1354 года. Отец Дмитрия Донского и Ивана Малого; супруг княгини Александры.\n\nИсточники (проверено 19.10.2026):\nhttps://history.ru/encyclopedia/ivan-ii-ivanovich-krasnyy\nhttps://kreml.ru/storage/mediafiles/files/researches/48595/sbornik30st10.pdf",
+    "before": false,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Отец"
+      },
+      {
+        "personId": "alexandra-mother-dmitry",
+        "role": "Муж"
+      }
+    ],
+    "id": "ivan-ii-krasny"
+  },
+  {
+    "name": "Иван Малый Иванович",
+    "firstName": "Иван Малый",
+    "lastName": "",
+    "patronymic": "Иванович",
+    "country": "Русь",
+    "region": "Звенигород",
+    "dynasty": "Рюриковичи (московская ветвь)",
+    "start": 1354,
+    "end": 1364,
+    "group": "family",
+    "note": "Младший брат Дмитрия; князь звенигородский",
+    "biography": "Сын Ивана II Красного и Александры, младший брат Дмитрия Донского. Князь звенигородский в 1359–1364 годах. Рождение датируется приблизительно 1354 годом; умер 23 октября 1364 года.\n\nИсточники (проверено 19.10.2026):\nhttps://www.hrono.info/geneal/ryuriki/geanl_rk_38.php\nhttps://kreml.ru/storage/mediafiles/files/researches/48595/sbornik30st10.pdf",
+    "before": false,
+    "relations": [
+      {
+        "personId": "ivan-ii-krasny",
+        "role": "Сын"
+      },
+      {
+        "personId": "dmitry",
+        "role": "Брат"
+      }
+    ],
+    "id": "ivan-maly"
+  },
+  {
+    "name": "Сергий Радонежский",
+    "firstName": "Сергий Радонежский",
+    "lastName": "",
+    "patronymic": "",
+    "country": "Русь",
+    "region": "Радонеж",
+    "dynasty": "",
+    "start": 1314,
+    "end": 1392,
+    "group": "clergy",
+    "note": "Троицкий игумен; рождение около 1314 года",
+    "biography": "Основатель Троицкого монастыря, посредник в московско-рязанском примирении 1385 года. Именно это событие отражено отдельной связью с Дмитрием Донским; период не означает всю продолжительность их общения. Рождение около 1314 года указано по Президентской библиотеке; точная дата обсуждается исследователями.\n\nИсточники (проверено 19.10.2026):\nhttps://www.prlib.ru/collections/1182692\nhttps://bigenc.ru/c/dmitrii-ivanovich-velikii-kniaz-vladimirskii-2f57ba?ysclid=mbdbmh6b2p948335714\nhttps://m.pravenc.ru/text/2662834.html",
+    "before": false,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Посредник в примирении с Рязанью",
+        "startYear": 1385,
+        "endYear": 1385
+      }
+    ],
+    "id": "sergiy-radonezh"
+  },
+  {
+    "name": "Юрий Дмитриевич",
+    "firstName": "Юрий",
+    "lastName": "",
+    "patronymic": "Дмитриевич",
+    "country": "Русь",
+    "region": "Звенигород",
+    "dynasty": "Рюриковичи (московская ветвь)",
+    "start": 1374,
+    "end": 1434,
+    "group": "family",
+    "note": "Сын Дмитрия; князь звенигородский и галицкий",
+    "biography": "Сын Дмитрия Донского и Евдокии Дмитриевны. Получил Звенигород и Галич по завещанию отца в 1389 году. Впоследствии занимал московский великокняжеский стол в 1433 и 1434 годах.\n\nИсточники (проверено 19.10.2026):\nhttps://www.hrono.ru/biograf/bio_yu/juri16dm.php\nhttps://bigenc.ru/c/dmitrii-ivanovich-velikii-kniaz-vladimirskii-2f57ba?ysclid=mbdbmh6b2p948335714",
+    "before": false,
+    "relations": [
+      {
+        "personId": "dmitry",
+        "role": "Сын"
+      },
+      {
+        "personId": "evdokia",
+        "role": "Сын"
+      }
+    ],
+    "id": "yuri-dmitrievich"
+  }
+]

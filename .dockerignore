@@ -1,0 +1,72 @@
+# Repository metadata and editor files
+**/.git
+**/.github
+**/.idea
+**/.vscode
+**/AGENTS.md
+**/README.md
+**/.DS_Store
+**/Thumbs.db
+**/Desktop.ini
+
+# Local configuration and credentials
+**/.env
+**/.env.*
+**/.editor-credentials.txt
+**/*.pem
+**/*.key
+**/*.p12
+**/id_rsa
+**/id_ed25519
+**/.idea
+
+# Dependencies, caches, and generated builds
+**/node_modules
+**/.npm-cache
+**/.npm
+**/dist
+**/dist-static
+**/dist-ssr
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.uv-cache*
+**/*.egg-info
+**/*.tsbuildinfo
+
+# Tests, coverage, and logs
+**/tests
+**/coverage
+**/htmlcov
+**/.coverage
+**/.coverage.*
+**/logs
+**/*.log
+
+# Local databases and backups
+**/backups
+**/backup
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/*.sqlite
+**/*.sqlite-wal
+**/*.sqlite-shm
+**/*.sqlite3
+**/*.sqlite3-wal
+**/*.sqlite3-shm
+**/*.dump
+**/*.sql.gz
+chronicle.sql
+
+# Temporary files
+**/*.tmp
+**/*.temp
+**/*.bak
+**/*.swp
+**/*.swo
+**/*~

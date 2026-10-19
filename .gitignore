@@ -1,0 +1,71 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+.editor-credentials.txt
+
+# Editors and operating system files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Dependencies and package manager caches
+node_modules/
+.venv/
+venv/
+.npm/
+.npm-cache/
+.npm_cache/
+.uv-cache*/
+.pnpm-store/
+
+# Build output and tool caches
+dist/
+dist-static/
+dist-ssr/
+*.tsbuildinfo
+.vite/
+.cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Test output and logs
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+.nyc_output/
+playwright-report/
+test-results/
+logs/
+*.log
+
+# Local databases and backup files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+backups/
+*.dump
+*.sql.gz
+chronicle.sql
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
