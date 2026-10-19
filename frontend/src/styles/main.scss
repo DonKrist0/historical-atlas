@@ -200,6 +200,48 @@
   .person-form-fields > label { display: flex; flex-direction: column; gap: 8px; font-size: 11px; color: #b8c0ac; margin-bottom: 18px; }
   .auth-bar { justify-content: space-between; }
   .person-form-fields:disabled :is(input, select, textarea) { opacity: 1; color: #d8dccf; -webkit-text-fill-color: #d8dccf; }
+
+  .person-dialog.person-editor { display: flex; flex-direction: column; overflow: hidden; padding: 24px; }
+  .person-editor-heading { flex-shrink: 0; padding-bottom: 18px; }
+  .person-editor-heading h2 { margin-top: 10px; }
+  .person-editor-heading > p { margin-top: 8px; color: #8f9b81; font-size: 12px; }
+  .person-editor > form { display: flex; flex-direction: column; min-height: 0; }
+  .person-editor-scroll { min-height: 0; overflow-y: auto; padding-right: 12px; scrollbar-width: thin; scrollbar-color: #596448 #1c2119; }
+  .person-editor label { display: flex; flex-direction: column; gap: 7px; min-width: 0; margin-bottom: 14px; color: #b8c0ac; font-size: 11px; }
+  .person-editor .name-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .person-editor .name-fields > label:last-child { grid-column: auto; }
+  .person-editor-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 4px 0 18px; }
+  .person-editor-section { min-width: 0; }
+  .person-editor-section h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #38432e; color: #d2bc88; font-size: 12px; font-weight: 500; }
+  .person-editor .person-classification { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; padding: 0; margin: 0; border: 0; }
+  .person-editor .field-wide { grid-column: 1 / -1; }
+  .person-editor .checkbox-label { flex-direction: row; align-items: center; gap: 8px; font-size: 10px; line-height: 1.5; }
+  .person-editor .checkbox-label input { flex-shrink: 0; }
+  .person-editor-description { display: flex; flex-direction: column; }
+  .person-editor-description > label:first-of-type { flex: 1; }
+  .person-editor-description > label:first-of-type textarea { flex: 1; min-height: 180px; }
+  .person-editor-description textarea { min-height: 85px; }
+  .person-editor-hint { color: #7e8d70; font-size: 10px; line-height: 1.7; }
+  .person-editor .relationship-fields { margin-bottom: 4px; }
+  .person-editor .relationship-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 0 16px; }
+  .person-editor .relationship-row-heading, .person-editor .relationship-preview { grid-column: 1 / -1; }
+  .person-editor .relation-period { min-width: 0; }
+  .person-editor .form-actions { flex-shrink: 0; margin-top: 16px; padding-top: 16px; }
+  .person-editor .form-error { flex-shrink: 0; margin: 12px 0 0; }
+  .person-editor .local-note { flex-shrink: 0; margin-top: 8px; }
+  @media (max-width: 720px) {
+    .person-dialog.person-editor { padding: 18px; }
+    .person-editor-scroll { padding-right: 8px; }
+    .person-editor-heading h2 { font-size: 25px; }
+    .person-editor-columns, .person-editor .name-fields { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .person-editor .relationship-row { grid-template-columns: minmax(0, 1fr); }
+    .person-editor-description { margin-top: 10px; }
+    .person-editor .form-actions { gap: 8px; }
+    .person-editor .form-actions .primary-button { flex: 1; }
+  }
+  @media (max-width: 400px) {
+    .person-editor .person-classification, .person-editor .date-inputs, .person-editor .relation-period { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  }
 }
 
 @layer vuetify-overrides {

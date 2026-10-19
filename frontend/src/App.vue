@@ -574,7 +574,7 @@
       </div>
     </v-dialog>
 
-    <v-dialog v-model="dialog" :max-width="canEdit ? 530 : 680" :persistent="saving" theme="dark">
+    <v-dialog v-model="dialog" :max-width="canEdit ? 1080 : 680" :persistent="saving" theme="dark">
       <PersonDetails
         v-if="!canEdit && selected"
         :people="people"
@@ -583,121 +583,143 @@
         @select="editPerson"
       />
 
-      <div v-else-if="canEdit" class="person-dialog"><div class="dialog-top"><span class="eyebrow">ДОПОЛНИТЬ ИСТОРИЮ</span><button aria-label="Закрыть" :disabled="saving" @click="dialog = false"><i aria-hidden="true" class="mdi mdi-close" /></button></div><h2>{{ selected ? 'Редактировать персону' : 'Новая персона' }}<span>.</span></h2><p>Добавьте ещё одну жизнь на общую шкалу времени.</p>
+      <div v-else-if="canEdit" class="person-dialog person-editor">
+        <div class="person-editor-heading">
+          <div class="dialog-top"><span class="eyebrow">ДОПОЛНИТЬ ИСТОРИЮ</span><button aria-label="Закрыть" :disabled="saving" @click="dialog = false"><i aria-hidden="true" class="mdi mdi-close" /></button></div>
+          <h2>{{ selected ? 'Редактировать персону' : 'Новая персона' }}<span>.</span></h2>
+          <p>{{ selected ? 'Уточните сведения, описание и связи персоны.' : 'Добавьте ещё одну жизнь на общую шкалу времени.' }}</p>
+        </div>
 
-        <form @submit.prevent="savePerson"><fieldset class="person-form-fields" :disabled="saving || !canEdit"><div class="name-fields">
-                                                                                                                 <label>Фамилия <span class="optional">если есть</span><input v-model="form.lastName" autocomplete="family-name" maxlength="100" placeholder="Фамилия"></label>
+        <form @submit.prevent="savePerson">
+          <div class="person-editor-scroll">
+            <fieldset class="person-form-fields person-editor-fields" :disabled="saving || !canEdit">
+              <div class="name-fields">
+                <label><span>Фамилия <span class="optional">если есть</span></span><input v-model="form.lastName" autocomplete="family-name" maxlength="100" placeholder="Фамилия"></label>
 
-                                                                                                                 <label>Имя <span class="optional">обязательно</span>
+                <label><span>Имя <span class="optional">обязательно</span></span>
 
-                                                                                                                   <input
-                                                                                                                     v-model="form.firstName"
-                                                                                                                     autocomplete="given-name"
-                                                                                                                     autofocus
-                                                                                                                     maxlength="150"
-                                                                                                                     placeholder="Например, Дмитрий"
-                                                                                                                     required
-                                                                                                                   ></label>
+                  <input
+                    v-model="form.firstName"
+                    autocomplete="given-name"
+                    autofocus
+                    maxlength="150"
+                    placeholder="Например, Дмитрий"
+                    required
+                  ></label>
 
-                                                                                                                 <label>Отчество <span class="optional">если есть</span><input v-model="form.patronymic" autocomplete="additional-name" maxlength="100" placeholder="Например, Иванович"></label>
-                                                                                                               </div>
+                <label><span>Отчество <span class="optional">если есть</span></span><input v-model="form.patronymic" autocomplete="additional-name" maxlength="100" placeholder="Например, Иванович"></label>
+              </div>
 
-                                             <p v-if="selected && selected.firstName === undefined" class="legacy-name-hint">Прежнее имя сохранено целиком в поле «Имя». При необходимости распределите его по отдельным полям.</p>
+              <p v-if="selected && selected.firstName === undefined" class="legacy-name-hint">Прежнее имя сохранено целиком в поле «Имя». При необходимости распределите его по отдельным полям.</p>
 
-                                             <div class="person-classification">
-                                               <label>Страна<input v-model="form.country" list="person-countries" maxlength="150" placeholder="Выберите или введите страну"></label>
-                                               <label>Регион<input v-model="form.region" list="person-regions" maxlength="150" placeholder="Выберите или введите регион"></label>
-                                               <label>Династия<input v-model="form.dynasty" list="person-dynasties" maxlength="150" placeholder="Выберите или введите династию"></label>
-                                               <p>Необязательные поля. Можно выбрать ранее сохранённое значение или ввести новое.</p>
-                                               <datalist id="person-countries"><option v-for="value in countryOptions" :key="value" :value="value" /></datalist>
-                                               <datalist id="person-regions"><option v-for="value in regionOptions" :key="value" :value="value" /></datalist>
-                                               <datalist id="person-dynasties"><option v-for="value in dynastyOptions" :key="value" :value="value" /></datalist>
-                                             </div>
+              <div class="person-editor-columns">
+                <section aria-label="Основные сведения" class="person-editor-section">
+                  <h3>Основные сведения</h3>
 
-                                             <div class="date-inputs"><label>Начало периода<input
-                                                                        max="2100"
-                                                                        min="1"
-                                                                        required
-                                                                        type="number"
-                                                                        :value="Number.isNaN(form.start) ? '' : form.start"
-                                                                        @input="form.start = ($event.target as HTMLInputElement).valueAsNumber"
-                                                                      ></label>
+                  <div class="person-classification">
+                    <label>Страна<input v-model="form.country" list="person-countries" maxlength="150" placeholder="Выберите или введите"></label>
+                    <label>Регион<input v-model="form.region" list="person-regions" maxlength="150" placeholder="Выберите или введите"></label>
+                    <label class="field-wide">Династия<input v-model="form.dynasty" list="person-dynasties" maxlength="150" placeholder="Выберите или введите династию"></label>
+                    <datalist id="person-countries"><option v-for="value in countryOptions" :key="value" :value="value" /></datalist>
+                    <datalist id="person-regions"><option v-for="value in regionOptions" :key="value" :value="value" /></datalist>
+                    <datalist id="person-dynasties"><option v-for="value in dynastyOptions" :key="value" :value="value" /></datalist>
+                  </div>
 
-                                               <label>Конец периода<input
+                  <div class="date-inputs">
+                    <label>Начало периода<input
+                      max="2100"
+                      min="1"
+                      placeholder="Год"
+                      required
+                      type="number"
+                      :value="Number.isNaN(form.start) ? '' : form.start"
+                      @input="form.start = ($event.target as HTMLInputElement).valueAsNumber"
+                    ></label>
+
+                    <label>Конец периода<input
+                      max="2100"
+                      min="1"
+                      placeholder="Год"
+                      required
+                      type="number"
+                      :value="Number.isNaN(form.end) ? '' : form.end"
+                      @input="form.end = ($event.target as HTMLInputElement).valueAsNumber"
+                    ></label>
+                  </div>
+
+                  <label class="checkbox-label"><input v-model="form.before" type="checkbox"> Точный год начала неизвестен (до указанного)</label>
+                  <label>Группа<select v-model="form.group"><option v-for="group in groups" :key="group.id" :value="group.id">{{ group.label }}</option></select></label>
+                  <label><span>Кем был / была <span class="optional">необязательно</span></span><input v-model="form.note" maxlength="150" placeholder="Например, воевода"></label>
+                </section>
+
+                <section aria-label="Описание и источники" class="person-editor-section person-editor-description">
+                  <h3>Описание и источники</h3>
+                  <label><span>Краткая справка <span class="optional">необязательно</span></span><textarea v-model="form.biography" placeholder="Кто этот человек, чем известен и какую роль сыграл в истории…" rows="8" /></label>
+                  <label><span>Источники <span class="optional">необязательно</span></span><textarea v-model="form.sources" maxlength="5000" placeholder="Книга, статья или ссылка; несколько источников через точку с запятой" rows="3" /></label>
+                  <p class="person-editor-hint">Страну, регион и династию можно выбрать из ранее сохранённых значений или ввести вручную. Описание и источники необязательны.</p>
+                </section>
+              </div>
+
+              <fieldset class="relationship-fields">
+                <legend>Связи с персонами <span class="optional">необязательно</span></legend>
+                <p id="relationship-direction">Роль относится к {{ formFullName || 'текущей персоне' }}. Например, добавляя ребёнка в карточку отца, выберите роль «Отец». Можно добавить несколько связей.</p>
+                <div v-if="form.group === 'close'" class="service-help"><strong>Чьим сподвижником был этот человек?</strong><p>Добавьте каждого правителя отдельной связью и укажите годы службы. Периоды могут пересекаться; неизвестные даты оставьте пустыми.</p><button class="add-relation-button" :disabled="!relatedPeople.some(person => person.group === 'rulers')" type="button" @click="form.relations.push({ personId: '', role: 'Сподвижник' })"><i class="mdi mdi-crown-outline" />Добавить правителя и период службы</button></div>
+
+                <div v-for="(relation, index) in form.relations" :key="index" class="relationship-row">
+                  <div class="relationship-row-heading"><span>Связь {{ index + 1 }}</span><button :aria-label="`Удалить связь ${index + 1}`" type="button" @click="form.relations.splice(index, 1)"><i aria-hidden="true" class="mdi mdi-close" /> Удалить</button></div>
+
+                  <label>{{ relation.role.trim().toLocaleLowerCase('ru') === 'сподвижник' ? 'При каком правителе' : 'Другая персона атласа' }}
+                    <select v-model="relation.personId" aria-describedby="relationship-direction" required>
+                      <option disabled value="">Выберите персону</option>
+                      <option v-for="person in relatedPeople.filter(person => relation.role.trim().toLocaleLowerCase('ru') !== 'сподвижник' || person.group === 'rulers' || person.id === relation.personId)" :key="person.id" :value="person.id">{{ person.name }} ({{ person.start }}–{{ person.end }})</option>
+                    </select>
+                  </label>
+
+                  <label>Роль текущей персоны
+                    <input
+                      v-model="relation.role"
+                      aria-describedby="relationship-direction"
+                      list="relationship-roles"
+                      maxlength="100"
+                      placeholder="Выберите или напишите: сын, брат…"
+                      required
+                    >
+                  </label>
+
+                  <div class="relation-period"><label>Начало связи / службы<input
                                                  max="2100"
                                                  min="1"
-                                                 required
+                                                 placeholder="Год, если известен"
+                                                 step="1"
                                                  type="number"
-                                                 :value="Number.isNaN(form.end) ? '' : form.end"
-                                                 @input="form.end = ($event.target as HTMLInputElement).valueAsNumber"
-                                               ></label></div>
+                                                 :value="relation.startYear ?? ''"
+                                                 @input="relation.startYear = ($event.target as HTMLInputElement).value === '' ? undefined : Number(($event.target as HTMLInputElement).value)"
+                                               ></label>
 
-                                             <label class="checkbox-label"><input v-model="form.before" type="checkbox"> Точный год начала неизвестен (до указанного)</label><label>Группа<select v-model="form.group"><option v-for="group in groups" :key="group.id" :value="group.id">{{ group.label }}</option></select></label><label>Кем был / была <span class="optional">необязательно</span><input v-model="form.note" maxlength="150" placeholder="Например, великий князь московский"></label>
+                    <label>Конец связи / службы<input
+                      max="2100"
+                      min="1"
+                      placeholder="Год, если известен"
+                      step="1"
+                      type="number"
+                      :value="relation.endYear ?? ''"
+                      @input="relation.endYear = ($event.target as HTMLInputElement).value === '' ? undefined : Number(($event.target as HTMLInputElement).value)"
+                    ></label></div>
 
-                                             <label>Краткая справка <span class="optional">необязательно</span>
-                                               <textarea v-model="form.biography" placeholder="Кто этот человек, чем известен и какую роль сыграл в истории…" rows="5" />
-                                             </label>
+                  <p v-if="relation.personId && relation.role.trim()" class="relationship-preview">{{ formFullName || 'Текущая персона' }} — {{ relation.role }} → {{ people.find(person => person.id === relation.personId)?.name }}<small>{{ relationPeriod(relation) }} · слева — кто приходится; справа — кому.</small></p>
+                </div>
 
-                                             <label>Источники <span class="optional">необязательно</span><input v-model="form.sources" maxlength="5000" placeholder="Книга, статья или ссылка; несколько источников через точку с запятой"></label>
+                <datalist id="relationship-roles"><option v-for="role in relationshipRoles" :key="role" :value="role" /></datalist>
+                <button class="add-relation-button" :disabled="relatedPeople.length === 0" type="button" @click="form.relations.push({ personId: '', role: '' })"><i aria-hidden="true" class="mdi mdi-plus" />Добавить связь</button>
 
-                                             <fieldset class="relationship-fields">
-                                               <legend>Связи с персонами <span class="optional">необязательно</span></legend>
-                                               <p id="relationship-direction">Роль относится к {{ formFullName || 'текущей персоне' }}. Например, добавляя ребёнка в карточку отца, выберите роль «Отец». Можно добавить несколько связей.</p>
-                                               <div v-if="form.group === 'close'" class="service-help"><strong>Чьим сподвижником был этот человек?</strong><p>Добавьте каждого правителя отдельной связью и укажите годы службы. Периоды могут пересекаться; неизвестные даты оставьте пустыми.</p><button class="add-relation-button" :disabled="!relatedPeople.some(person => person.group === 'rulers')" type="button" @click="form.relations.push({ personId: '', role: 'Сподвижник' })"><i class="mdi mdi-crown-outline" />Добавить правителя и период службы</button></div>
-
-                                               <div v-for="(relation, index) in form.relations" :key="index" class="relationship-row">
-                                                 <div class="relationship-row-heading"><span>Связь {{ index + 1 }}</span><button :aria-label="`Удалить связь ${index + 1}`" type="button" @click="form.relations.splice(index, 1)"><i aria-hidden="true" class="mdi mdi-close" /> Удалить</button></div>
-
-                                                 <label>{{ relation.role.trim().toLocaleLowerCase('ru') === 'сподвижник' ? 'При каком правителе' : 'Другая персона атласа' }}
-                                                   <select v-model="relation.personId" aria-describedby="relationship-direction" required>
-                                                     <option disabled value="">Выберите персону</option>
-                                                     <option v-for="person in relatedPeople.filter(person => relation.role.trim().toLocaleLowerCase('ru') !== 'сподвижник' || person.group === 'rulers' || person.id === relation.personId)" :key="person.id" :value="person.id">{{ person.name }} ({{ person.start }}–{{ person.end }})</option>
-                                                   </select>
-                                                 </label>
-
-                                                 <label>Роль текущей персоны
-                                                   <input
-                                                     v-model="relation.role"
-                                                     aria-describedby="relationship-direction"
-                                                     list="relationship-roles"
-                                                     maxlength="100"
-                                                     placeholder="Выберите или напишите: сын, брат…"
-                                                     required
-                                                   >
-                                                 </label>
-
-                                                 <div class="relation-period"><label>Начало связи / службы<input
-                                                                                max="2100"
-                                                                                min="1"
-                                                                                placeholder="Год, если известен"
-                                                                                step="1"
-                                                                                type="number"
-                                                                                :value="relation.startYear ?? ''"
-                                                                                @input="relation.startYear = ($event.target as HTMLInputElement).value === '' ? undefined : Number(($event.target as HTMLInputElement).value)"
-                                                                              ></label>
-
-                                                   <label>Конец связи / службы<input
-                                                     max="2100"
-                                                     min="1"
-                                                     placeholder="Год, если известен"
-                                                     step="1"
-                                                     type="number"
-                                                     :value="relation.endYear ?? ''"
-                                                     @input="relation.endYear = ($event.target as HTMLInputElement).value === '' ? undefined : Number(($event.target as HTMLInputElement).value)"
-                                                   ></label></div>
-
-                                                 <p v-if="relation.personId && relation.role.trim()" class="relationship-preview">{{ formFullName || 'Текущая персона' }} — {{ relation.role }} → {{ people.find(person => person.id === relation.personId)?.name }}<small>{{ relationPeriod(relation) }} · слева — кто приходится; справа — кому.</small></p>
-                                               </div>
-
-                                               <datalist id="relationship-roles"><option v-for="role in relationshipRoles" :key="role" :value="role" /></datalist>
-                                               <button class="add-relation-button" :disabled="relatedPeople.length === 0" type="button" @click="form.relations.push({ personId: '', role: '' })"><i aria-hidden="true" class="mdi mdi-plus" />Добавить связь</button>
-
-                                               <div v-if="incomingRelations.length > 0" class="incoming-relations">
-                                                 <h3>Связи, указанные у других персон</h3>
-                                                 <p>Видны автоматически. Изменяются в форме соответствующей персоны.</p>
-                                                 <div v-for="(relation, index) in incomingRelations" :key="`${relation.personId}-${index}`" class="incoming-relation"><strong>{{ relation.name }}</strong><span>{{ relation.role }} · {{ relationPeriod(relation) }} · по отношению к текущей персоне</span></div>
-                                               </div>
-                                             </fieldset></fieldset>
+                <div v-if="incomingRelations.length > 0" class="incoming-relations">
+                  <h3>Связи, указанные у других персон</h3>
+                  <p>Видны автоматически. Изменяются в форме соответствующей персоны.</p>
+                  <div v-for="(relation, index) in incomingRelations" :key="`${relation.personId}-${index}`" class="incoming-relation"><strong>{{ relation.name }}</strong><span>{{ relation.role }} · {{ relationPeriod(relation) }} · по отношению к текущей персоне</span></div>
+                </div>
+              </fieldset>
+            </fieldset>
+          </div>
 
           <p v-if="formError" class="form-error" role="alert">{{ formError }}</p><div class="form-actions"><button class="secondary-button" :disabled="saving" type="button" @click="dialog = false">{{ canEdit ? 'Отмена' : 'Закрыть' }}</button><button v-if="canEdit" class="primary-button" :disabled="saving || importing" type="submit"><i aria-hidden="true" class="mdi mdi-plus" />{{ saving ? 'Сохраняем…' : selected ? 'Сохранить' : 'Добавить на шкалу' }}</button></div><p v-if="canEdit" class="local-note">Изменения сохраняются в общей коллекции после подтверждения сервера.</p></form></div>
     </v-dialog>
