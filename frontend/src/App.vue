@@ -2,14 +2,17 @@
   import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
   import { authApi, type Identity } from './api/auth'
   import { peopleApi } from './api/people'
+  import CountryFilter from './components/CountryFilter.vue'
   import GenealogyPage from './components/GenealogyPage.vue'
   import PersonDetails from './components/PersonDetails.vue'
   import PersonPicker from './components/PersonPicker.vue'
   import RelationsGraph from './components/RelationsGraph.vue'
   import { isStatic } from './config'
-  import { type GroupId, groups, type Person, type PersonRelation } from './data/people'
+  import { type CountryRole, type Gender, type GroupId, groups, type Person, type PersonRelation } from './data/people'
   import { collectionPeriod } from './utils/collectionPeriod'
+  import { countries, countryKey, defaultCountry, filterByCountry, roleForCountry } from './utils/countries'
   import { combineFamilyRelations, emptyFamily, type FamilyRole, familySlots, patronymicSuggestions, splitFamilyRelations } from './utils/familyForm'
+  import { familySourceRole, familyTargetGender, filterPeopleByGender, relationTargetGender, roleGender } from './utils/gender'
   import { relationPeriod } from './utils/relationPeriod'
   import { packTimelineColumns } from './utils/timeline'
 
@@ -154,7 +157,24 @@
   const enabled = ref<GroupId[]>(groups.map(g => g.id))
   const zoom = ref(100)
   const yearHeight = 22
-  const period = computed(() => collectionPeriod(people.value))
+  const country = ref('')
+  let preferredCountry: string | undefined
+  try {
+    preferredCountry = localStorage.getItem('chronicle-country') ?? undefined
+  } catch { /* Use the collection default. */ }
+  const countryPeople = computed(() => filterByCountry(people.value, country.value))
+  const collectionBounds = computed(() => collectionPeriod(countryPeople.value))
+  const period = computed(() => collectionPeriod(countryPeople.value))
+  watch(country, () => {
+    range.value = 'Все годы'
+    preferredCountry = country.value
+    try {
+      localStorage.setItem('chronicle-country', country.value)
+    } catch { /* Selection still persists during navigation. */ }
+  })
+  watch(people, value => {
+    country.value = defaultCountry(value, preferredCountry)
+  })
   const range = ref('Все годы')
   const startYear = computed(() => range.value === 'Все годы' ? period.value.start ?? 1 : Number(range.value.split('–', 1)[0]))
   const endYear = computed(() => range.value === 'Все годы' ? period.value.end ?? startYear.value : Number(range.value.split('–', 2)[1]))
@@ -162,7 +182,7 @@
     if (!value.centuries.some(item => `${item.start}–${item.end}` === range.value)) range.value = 'Все годы'
   })
   const years = computed(() => period.value.start === null ? [] : Array.from({ length: endYear.value - startYear.value + 1 }, (_, i) => startYear.value + i))
-  const shown = computed(() => people.value.filter(p => enabled.value.includes(p.group) && p.name.toLocaleLowerCase('ru').includes(query.value.toLocaleLowerCase('ru')) && p.end >= startYear.value && p.start <= endYear.value))
+  const shown = computed(() => countryPeople.value.filter(p => enabled.value.includes(p.group) && p.name.toLocaleLowerCase('ru').includes(query.value.toLocaleLowerCase('ru')) && p.end >= startYear.value && p.start <= endYear.value))
   const lanes = computed(() => groups.filter(group => enabled.value.includes(group.id)).map(group => {
     const members = shown.value.filter(person => person.group === group.id)
     return {
@@ -174,28 +194,58 @@
   const chartWidth = computed(() => `${88 + lanes.value.reduce((sum, group) => sum + Math.max(group.columns.length, 1) * 128, 0)}px`)
   const dialog = ref(false)
   const selected = ref<Person | null>(null)
-  const form = reactive({ firstName: '', lastName: '', patronymic: '', country: '', region: '', dynasty: '', start: Number.NaN, end: Number.NaN, group: 'family' as GroupId, note: '', biography: '', sources: '', before: false, relations: [] as PersonRelation[] })
+  const form = reactive({ firstName: '', lastName: '', patronymic: '', gender: 'unknown' as Gender, countryRoles: [] as CountryRole[], country: '', region: '', dynasty: '', start: Number.NaN, end: Number.NaN, group: 'family' as GroupId, note: '', biography: '', sources: '', before: false, relations: [] as PersonRelation[] })
   const family = reactive(emptyFamily())
-  const suggestedPatronymics = computed(() => patronymicSuggestions(people.value.find(person => person.id === family.father.personId)?.firstName ?? ''))
+  const includeUnknownGender = ref(true)
+  const relationGenderFilters = reactive(new Map<PersonRelation, Gender>())
+  let autoPatronymic = ''
+  const suggestedPatronymics = computed(() => {
+    const suggestions = patronymicSuggestions(people.value.find(person => person.id === family.father.personId)?.firstName ?? '')
+    return form.gender === 'unknown' ? suggestions : suggestions.filter((_, index) => index === (form.gender === 'male' ? 0 : 1))
+  })
+  watch([() => family.father.personId, () => form.gender], () => {
+    if (form.gender === 'unknown' || suggestedPatronymics.value.length !== 1) return
+    if (!form.patronymic.trim() || form.patronymic === autoPatronymic) {
+      autoPatronymic = suggestedPatronymics.value[0]!
+      form.patronymic = autoPatronymic
+    }
+  })
+  watch(() => form.gender, gender => {
+    for (const { key } of familySlots) {
+      if (family[key].personId) family[key].role = familySourceRole(key, gender)
+    }
+  })
+  function familyCandidates (key: FamilyRole) {
+    return filterPeopleByGender(relatedPeople.value, familyTargetGender(key, form.gender), includeUnknownGender.value, family[key].personId)
+  }
+  function relationGenderFilter (relation: PersonRelation): Gender {
+    const automatic = relationTargetGender(relation.role, form.gender)
+    return automatic === 'unknown' ? relationGenderFilters.get(relation) ?? 'unknown' : automatic
+  }
+  function relationCandidates (relation: PersonRelation) {
+    const candidates = relatedPeople.value.filter(person => relation.role.trim().toLocaleLowerCase('ru') !== 'сподвижник' || person.group === 'rulers' || person.id === relation.personId)
+    return filterPeopleByGender(candidates, relationGenderFilter(relation), includeUnknownGender.value, relation.personId)
+  }
   function setFamilyMember (key: FamilyRole, personId: string) {
     if (family[key].personId === personId) return
     const roles = key === 'spouse' ? ['муж', 'жена', 'супруг', 'супруга'] : ['сын', 'дочь', 'ребенок']
     const existing = form.relations.findIndex(relation => relation.personId === personId && roles.includes(relation.role.trim().toLocaleLowerCase('ru').replaceAll('ё', 'е')))
     const prior = existing === -1 ? undefined : form.relations.splice(existing, 1)[0]
-    family[key] = { ...(prior ?? { personId, role: key === 'spouse' ? 'Супруг' : 'Ребёнок' }), familyRole: key }
+    family[key] = { ...(prior ?? { personId, role: familySourceRole(key, form.gender) }), familyRole: key }
   }
   const formFullName = computed(() => [form.lastName, form.firstName, form.patronymic].map(part => part.trim()).filter(Boolean).join(' '))
   function savedOptions (field: 'country' | 'region' | 'dynasty') {
     const values = people.value.map(person => person[field]?.trim()).filter((value): value is string => !!value)
     return [...new Map(values.map(value => [value.toLocaleLowerCase('ru'), value])).values()].sort((a, b) => a.localeCompare(b, 'ru'))
   }
-  const countryOptions = computed(() => savedOptions('country'))
+  const countryOptions = computed(() => countries(people.value).filter(option => option.value !== '').map(option => option.label))
   const regionOptions = computed(() => savedOptions('region'))
   const dynastyOptions = computed(() => savedOptions('dynasty'))
   const relatedPeople = computed(() => people.value
     .filter(person => person.id !== selected.value?.id)
     .sort((a, b) => a.name.localeCompare(b.name, 'ru')))
-  const relationshipRoles = ['Сын', 'Дочь', 'Брат', 'Сестра', 'Отец', 'Мать', 'Муж', 'Жена', 'Дед', 'Бабушка', 'Внук', 'Внучка', 'Дядя', 'Тётя', 'Племянник', 'Племянница', 'Двоюродный брат', 'Двоюродная сестра', 'Друг', 'Советник', 'Соратник', 'Сподвижник']
+  const allRelationshipRoles = ['Сын', 'Дочь', 'Брат', 'Сестра', 'Отец', 'Мать', 'Муж', 'Жена', 'Дед', 'Бабушка', 'Внук', 'Внучка', 'Дядя', 'Тётя', 'Племянник', 'Племянница', 'Двоюродный брат', 'Двоюродная сестра', 'Друг', 'Советник', 'Соратник', 'Сподвижник']
+  const relationshipRoles = computed(() => allRelationshipRoles.filter(role => form.gender === 'unknown' || roleGender(role) === 'unknown' || roleGender(role) === form.gender))
   const incomingRelations = computed(() => selected.value
     ? people.value.flatMap(person =>
       (person.relations ?? []).filter(relation => relation.personId === selected.value?.id).map(relation => ({ ...relation, personId: person.id, name: person.name })))
@@ -281,12 +331,12 @@
   }, { immediate: true })
   const groupStats = computed(() => groups.map(group => ({
     ...group,
-    count: people.value.filter(person => person.group === group.id).length,
+    count: countryPeople.value.filter(person => person.group === group.id).length,
   })))
-  const collectionStart = computed(() => period.value.start)
-  const collectionEnd = computed(() => period.value.end)
+  const collectionStart = computed(() => collectionBounds.value.start)
+  const collectionEnd = computed(() => collectionBounds.value.end)
   const collectionSpan = computed(() => collectionStart.value === null || collectionEnd.value === null ? 0 : collectionEnd.value - collectionStart.value + 1)
-  const recentPeople = computed(() => people.value.slice(-4).reverse())
+  const recentPeople = computed(() => countryPeople.value.slice(-4).reverse())
   function openGroup (id: GroupId) {
     enabled.value = [id]
     query.value = ''
@@ -299,17 +349,23 @@
   function openForm () {
     if (!canEdit.value || !loaded.value || loading.value || importing.value) return
     selected.value = null
+    autoPatronymic = ''
+    relationGenderFilters.clear()
     Object.assign(family, emptyFamily())
-    Object.assign(form, { firstName: '', lastName: '', patronymic: '', country: '', region: '', dynasty: '', start: Number.NaN, end: Number.NaN, group: 'family', note: '', biography: '', sources: '', before: false, relations: [] })
+    Object.assign(form, { firstName: '', lastName: '', patronymic: '', gender: 'unknown', countryRoles: [], country: country.value === '' ? '' : countries(people.value).find(option => option.value === country.value)?.label ?? '', region: '', dynasty: '', start: Number.NaN, end: Number.NaN, group: 'family', note: '', biography: '', sources: '', before: false, relations: [] })
     formError.value = ''
     dialog.value = true
   }
   function editPerson (person: Person) {
+    person = people.value.find(original => original.id === person.id) ?? person
     selected.value = person
+    autoPatronymic = ''
+    relationGenderFilters.clear()
     const split = splitFamilyRelations(person.relations ?? [])
     Object.assign(family, split.family)
     Object.assign(form, {
-      firstName: person.firstName ?? person.name, lastName: person.lastName ?? '', patronymic: person.patronymic ?? '',
+      firstName: person.firstName ?? person.name, lastName: person.lastName ?? '', patronymic: person.patronymic ?? '', gender: person.gender ?? 'unknown',
+      countryRoles: (person.countryRoles ?? []).map(role => ({ ...role })),
       country: person.country ?? '', region: person.region ?? '', dynasty: person.dynasty ?? '',
       start: person.start, end: person.end, group: person.group,
       note: person.note, before: person.before ?? false,
@@ -329,6 +385,11 @@
     }
     if (!Number.isInteger(form.start) || !Number.isInteger(form.end) || form.start < 1 || form.end > 2100 || form.end < form.start) {
       formError.value = 'Укажите целые годы от 1 до 2100. Конец периода должен быть не раньше начала.'
+      return
+    }
+    const roleCountries = form.countryRoles.map(role => countryKey(role.country))
+    if (roleCountries.some(value => !value || value === countryKey(form.country)) || new Set(roleCountries).size !== roleCountries.length) {
+      formError.value = 'Укажите разные страны для дополнительных ролей. Роль в основной стране задаётся её группой.'
       return
     }
     const { relations: additional, ...details } = form
@@ -374,7 +435,8 @@
         : await peopleApi.create(payload)
       if (selected.value) people.value = people.value.map(p => p.id === person.id ? person : p)
       else people.value.push(person)
-      if (!enabled.value.includes(person.group)) enabled.value.push(person.group)
+      const visibleRole = roleForCountry(person, country.value)
+      if (visibleRole && !enabled.value.includes(visibleRole)) enabled.value.push(visibleRole)
       query.value = ''
       if (person.start < startYear.value || person.end > endYear.value) range.value = 'Все годы'
       dialog.value = false
@@ -409,7 +471,7 @@
         <nav aria-label="Основная навигация" class="main-nav">
           <a :aria-current="activeNav === 'overview' ? 'page' : undefined" aria-label="Обзор атласа" :class="{ active: activeNav === 'overview' }" href="#/"><i aria-hidden="true" class="mdi mdi-view-dashboard-outline" />Обзор атласа</a>
           <a :aria-current="activeNav === 'timeline' ? 'page' : undefined" aria-label="Шкала времени" :class="{ active: activeNav === 'timeline' }" href="#/timeline"><i aria-hidden="true" class="mdi mdi-chart-timeline-variant" />Шкала времени<span class="nav-dot" /></a>
-          <a :aria-current="activeNav === 'people' ? 'page' : undefined" aria-label="Персоны" :class="{ active: activeNav === 'people' }" href="#/people"><i aria-hidden="true" class="mdi mdi-account-group-outline" />Персоны<span class="nav-count">{{ people.length }}</span></a>
+          <a :aria-current="activeNav === 'people' ? 'page' : undefined" aria-label="Персоны" :class="{ active: activeNav === 'people' }" href="#/people"><i aria-hidden="true" class="mdi mdi-account-group-outline" />Персоны<span class="nav-count">{{ countryPeople.length }}</span></a>
           <a :aria-current="activeNav === 'relations' ? 'page' : undefined" aria-label="Карта связей" :class="{ active: activeNav === 'relations' }" href="#/relations"><i aria-hidden="true" class="mdi mdi-graph-outline" />Карта связей</a>
           <a :aria-current="activeNav === 'genealogy' ? 'page' : undefined" aria-label="Генеалогия" :class="{ active: activeNav === 'genealogy' }" href="#/genealogy"><i aria-hidden="true" class="mdi mdi-family-tree" />Генеалогия</a>
         </nav>
@@ -424,7 +486,7 @@
             :aria-pressed="enabled.includes(group.id)"
             :class="{ muted: !enabled.includes(group.id) }"
             @click="toggleGroup(group.id)"
-          ><span class="color-dot" :style="{ background: group.color }" /><span>{{ group.label }}</span><small>{{ people.filter(p => p.group === group.id).length }}</small><i v-if="enabled.includes(group.id)" class="mdi mdi-check" /></button>
+          ><span class="color-dot" :style="{ background: group.color }" /><span>{{ group.label }}</span><small>{{ countryPeople.filter(p => p.group === group.id).length }}</small><i v-if="enabled.includes(group.id)" class="mdi mdi-check" /></button>
         </div>
 
         <div class="sidebar-note"><span class="note-spark">✧</span><p>История становится понятнее,<br>когда видишь связи.</p><span class="small-rule" /></div>
@@ -447,9 +509,11 @@
         <div v-if="legacyError" class="data-notice" role="alert">{{ legacyError }}</div>
         <div v-if="canEdit && legacyPeople.length > 0" class="data-notice"><span>В браузере есть прежние записи: {{ legacyPeople.length }}. Перенос обновит совпадающие записи в базе; остальные останутся. Копия в браузере сохранится.</span><button :disabled="!loaded || loading || importing || saving" @click="importLegacyPeople">{{ importing ? 'Переносим…' : 'Перенести в базу' }}</button></div>
 
+        <CountryFilter v-model="country" :people="people" />
+
         <section v-if="activeNav === 'overview'" class="intro">
-          <div class="intro-copy"><div class="eyebrow"><span /> ЛЮДИ. ВРЕМЯ. СВЯЗИ.</div><h1>У каждой эпохи —<br>своё <em>окружение.</em></h1><p>Правители и те, кто был рядом. Исследуйте историю<br class="desktop-break"> через жизни людей на одной шкале времени.</p><div class="intro-meta"><span><i aria-hidden="true" class="mdi mdi-map-marker-outline" /> Исторический атлас</span><span class="meta-separator" /><span>{{ period.label }}</span><span v-if="collectionStart !== null" class="era-tag">{{ collectionStart }}–{{ collectionEnd }}</span></div></div>
-          <div aria-hidden="true" class="era-art"><div class="orbit orbit-one" /><div class="orbit orbit-two" /><div class="art-cross cross-one">+</div><div class="art-cross cross-two">+</div><div class="art-label">МОСКОВСКОЕ КНЯЖЕСТВО</div><svg class="tower-art" fill="none" viewBox="0 0 240 200"><g stroke="currentColor" stroke-width="1"><path d="M30 177H210M43 177V136H74V177M166 177V136H197V177M49 136V121H68V136M172 136V121H191V136M78 177V102H162V177M87 102V91H153V102M96 91V66H144V91M104 66V51H136V66M110 51L120 27L130 51M120 27V13M113 20H127M89 177V120H108V177M132 177V120H151V177M114 177V143Q120 134 126 143V177M52 151H61M179 151H188M101 79H108M132 79H139M113 111H127M20 183H220M82 184V190H158V184" /></g></svg><div class="art-bottom">ОТ КНЯЗЕЙ — К ЦАРЯМ <span>01 / 04</span></div></div>
+          <div class="intro-copy"><div class="eyebrow"><span /> ЛЮДИ. ВРЕМЯ. СВЯЗИ.</div><h1>У каждой эпохи —<br>своё <em>окружение.</em></h1><p>Правители и те, кто был рядом. Исследуйте историю<br class="desktop-break"> через жизни людей на одной шкале времени.</p><div class="intro-meta"><span><i aria-hidden="true" class="mdi mdi-map-marker-outline" /> Исторический атлас</span><span class="meta-separator" /><span>{{ collectionBounds.label }}</span><span v-if="collectionStart !== null" class="era-tag">{{ collectionStart }}–{{ collectionEnd }}</span></div></div>
+          <div aria-hidden="true" class="era-art"><div class="orbit orbit-one" /><div class="orbit orbit-two" /><div class="art-cross cross-one">+</div><div class="art-cross cross-two">+</div><div class="art-label">{{ countries(people).find(option => option.value === country)?.label ?? 'ИСТОРИЧЕСКИЙ АТЛАС' }}</div><svg class="tower-art" fill="none" viewBox="0 0 240 200"><g stroke="currentColor" stroke-width="1"><path d="M30 177H210M43 177V136H74V177M166 177V136H197V177M49 136V121H68V136M172 136V121H191V136M78 177V102H162V177M87 102V91H153V102M96 91V66H144V91M104 66V51H136V66M110 51L120 27L130 51M120 27V13M113 20H127M89 177V120H108V177M132 177V120H151V177M114 177V143Q120 134 126 143V177M52 151H61M179 151H188M101 79H108M132 79H139M113 111H127M20 183H220M82 184V190H158V184" /></g></svg><div class="art-bottom">ЛЮДИ И ИХ ОКРУЖЕНИЕ <span>01 / 04</span></div></div>
         </section>
 
         <section v-if="activeNav === 'overview'" aria-label="Обзор коллекции" class="dashboard">
@@ -459,7 +523,7 @@
           </div>
 
           <div class="stat-grid">
-            <article class="stat-card total-stat"><span class="stat-label"><i aria-hidden="true" class="mdi mdi-account-group-outline" />Всего персон</span><strong data-testid="total-people">{{ people.length }}</strong><small>Жизни, собранные на одной шкале</small></article>
+            <article class="stat-card total-stat"><span class="stat-label"><i aria-hidden="true" class="mdi mdi-account-group-outline" />Всего персон</span><strong data-testid="total-people">{{ countryPeople.length }}</strong><small>Жизни, собранные на одной шкале</small></article>
             <article class="stat-card"><span class="stat-label"><i aria-hidden="true" class="mdi mdi-crown-outline" />Правители</span><strong>{{ groupStats.find(group => group.id === 'rulers')?.count ?? 0 }}</strong><small>Стержень исторического атласа</small></article>
             <article class="stat-card"><span class="stat-label"><i aria-hidden="true" class="mdi mdi-calendar-range-outline" />Охват коллекции</span><strong>{{ collectionSpan }}<span>лет</span></strong><small>{{ collectionStart ?? '—' }} — {{ collectionEnd ?? '—' }} · по указанным датам</small></article>
             <article class="stat-card"><span class="stat-label"><i aria-hidden="true" class="mdi mdi-palette-outline" />Группы персон</span><strong>{{ groupStats.filter(group => group.count > 0).length }}<span>из {{ groups.length }}</span></strong><small>Правители и их окружение</small></article>
@@ -474,7 +538,7 @@
                 class="group-stat-row"
                 :style="{ '--group-color': group.color }"
                 @click="openGroup(group.id)"
-              ><span class="group-stat-name"><span class="color-dot" :style="{ background: group.color }" />{{ group.label }}<strong>{{ group.count }}</strong></span><span class="group-stat-track"><span :style="{ width: `${people.length > 0 ? group.count / people.length * 100 : 0}%` }" /></span></button></section>
+              ><span class="group-stat-name"><span class="color-dot" :style="{ background: group.color }" />{{ group.label }}<strong>{{ group.count }}</strong></span><span class="group-stat-track"><span :style="{ width: `${countryPeople.length > 0 ? group.count / countryPeople.length * 100 : 0}%` }" /></span></button></section>
 
             <section class="dashboard-panel"><div class="panel-heading"><h3>Последние в коллекции</h3><a href="#/people">Все персоны ↗</a></div><button v-for="person in recentPeople" :key="person.id" class="recent-person" @click="editPerson(person)"><span class="color-dot" :style="{ background: groups.find(group => group.id === person.group)?.color }" /><span>{{ person.name }}<small>{{ person.note || 'Персона атласа' }}</small></span><span class="recent-dates">{{ person.before ? 'до ' : '' }}{{ person.start }} — {{ person.end }}</span></button><p v-if="recentPeople.length === 0" class="empty-results">Добавьте первую персону, чтобы начать коллекцию.</p></section>
           </div>
@@ -482,12 +546,20 @@
           <a class="timeline-link" href="#/timeline"><span class="timeline-link-icon"><i aria-hidden="true" class="mdi mdi-chart-timeline-variant" /></span><span><strong>Увидеть эпоху целиком</strong><small>Откройте шкалу времени и узнайте, кто жил одновременно.</small></span><span class="timeline-link-action">Перейти к графику <i aria-hidden="true" class="mdi mdi-arrow-right" /></span></a>
         </section>
 
-        <RelationsGraph v-else-if="activeNav === 'relations'" :can-edit="canEdit" :people="people" @edit="editPerson" />
-        <GenealogyPage v-else-if="activeNav === 'genealogy'" :can-edit="canEdit" :people="people" @edit="editPerson" />
+        <RelationsGraph
+          v-else-if="activeNav === 'relations'"
+          :can-edit="canEdit"
+          :collection="people"
+          :people="countryPeople"
+          :perspective="country"
+          @edit="editPerson"
+        />
+
+        <GenealogyPage v-else-if="activeNav === 'genealogy'" :can-edit="canEdit" :people="countryPeople" @edit="editPerson" />
 
         <section v-else aria-label="Исторический атлас" class="atlas-section">
-          <div class="section-heading"><div><span class="section-number">01</span><h2>{{ activeNav === 'timeline' ? 'Шкала времени' : 'Коллекция персон' }}</h2><span class="count-badge">{{ people.length }} персон</span></div><button v-if="canEdit" class="primary-button" @click="openForm"><i aria-hidden="true" class="mdi mdi-plus" />Добавить персону</button></div>
-          <div class="chart-toolbar"><label class="search-field"><i aria-hidden="true" class="mdi mdi-magnify" /><input v-model="query" aria-label="Найти персону" placeholder="Найти персону…"><button v-if="query" aria-label="Очистить поиск" @click="query = ''">×</button><span v-else class="search-shortcut">⌕</span></label><div class="toolbar-options"><label class="range-select"><i aria-hidden="true" class="mdi mdi-calendar-range-outline" /><select v-model="range" aria-label="Период"><option value="Все годы">Все годы{{ collectionStart !== null ? ` · ${collectionStart}–${collectionEnd}` : '' }}</option><option v-for="item in period.centuries" :key="item.start" :value="`${item.start}–${item.end}`">{{ item.label }} · {{ item.start }}–{{ item.end }}</option></select></label><div v-if="activeNav === 'timeline'" aria-label="Масштаб диаграммы" class="zoom-control" role="group"><button aria-label="Уменьшить масштаб" :disabled="zoom <= 25" @click="setTimelineZoom(zoom - 25)">−</button><button aria-label="Сбросить масштаб на 100%" class="zoom-reset" title="Сбросить масштаб на 100%" @click="setTimelineZoom(100)">{{ zoom }}%</button><button aria-label="Увеличить масштаб" :disabled="zoom >= 200" @click="setTimelineZoom(zoom + 25)">+</button></div><button aria-label="Выгрузить данные" class="export-button" title="Выгрузить JSON" @click="exportData"><i aria-hidden="true" class="mdi mdi-tray-arrow-down" /></button></div></div>
+          <div class="section-heading"><div><span class="section-number">01</span><h2>{{ activeNav === 'timeline' ? 'Шкала времени' : 'Коллекция персон' }}</h2><span class="count-badge">{{ shown.length }} персон</span></div><button v-if="canEdit" class="primary-button" @click="openForm"><i aria-hidden="true" class="mdi mdi-plus" />Добавить персону</button></div>
+          <div class="chart-toolbar"><label class="search-field"><i aria-hidden="true" class="mdi mdi-magnify" /><input v-model="query" aria-label="Найти персону" placeholder="Найти персону…"><button v-if="query" aria-label="Очистить поиск" @click="query = ''">×</button><span v-else class="search-shortcut">⌕</span></label><div class="toolbar-options"><label class="range-select"><i aria-hidden="true" class="mdi mdi-calendar-range-outline" /><select v-model="range" aria-label="Период"><option value="Все годы">Все годы{{ period.start !== null ? ` · ${period.start}–${period.end}` : '' }}</option><option v-for="item in period.centuries" :key="item.start" :value="`${item.start}–${item.end}`">{{ item.label }} · {{ item.start }}–{{ item.end }}</option></select></label><div v-if="activeNav === 'timeline'" aria-label="Масштаб диаграммы" class="zoom-control" role="group"><button aria-label="Уменьшить масштаб" :disabled="zoom <= 25" @click="setTimelineZoom(zoom - 25)">−</button><button aria-label="Сбросить масштаб на 100%" class="zoom-reset" title="Сбросить масштаб на 100%" @click="setTimelineZoom(100)">{{ zoom }}%</button><button aria-label="Увеличить масштаб" :disabled="zoom >= 200" @click="setTimelineZoom(zoom + 25)">+</button></div><button aria-label="Выгрузить данные" class="export-button" title="Выгрузить JSON" @click="exportData"><i aria-hidden="true" class="mdi mdi-tray-arrow-down" /></button></div></div>
 
           <div aria-label="Фильтры групп" class="mobile-filters"><button
             v-for="group in groups"
@@ -599,6 +671,7 @@
         v-if="!canEdit && selected"
         :people="people"
         :person="selected"
+        :viewpoint="country"
         @close="dialog = false"
         @select="editPerson"
       />
@@ -635,6 +708,7 @@
               <div class="person-editor-columns">
                 <section aria-label="Основные сведения" class="person-editor-section">
                   <h3>Основные сведения</h3>
+                  <label>Пол персоны<select v-model="form.gender" aria-label="Пол персоны"><option value="unknown">Не указан</option><option value="male">Мужской</option><option value="female">Женский</option></select></label>
 
                   <div class="person-classification">
                     <label>Страна<input v-model="form.country" list="person-countries" maxlength="150" placeholder="Выберите или введите"></label>
@@ -668,7 +742,7 @@
                   </div>
 
                   <label class="checkbox-label"><input v-model="form.before" type="checkbox"> Точный год начала неизвестен (до указанного)</label>
-                  <label>Группа<select v-model="form.group"><option v-for="group in groups" :key="group.id" :value="group.id">{{ group.label }}</option></select></label>
+                  <label>Роль в основной стране<select v-model="form.group"><option v-for="group in groups" :key="group.id" :value="group.id">{{ group.label }}</option></select></label>
                   <label><span>Кем был / была <span class="optional">необязательно</span></span><input v-model="form.note" maxlength="150" placeholder="Например, воевода"></label>
                 </section>
 
@@ -680,17 +754,39 @@
                 </section>
               </div>
 
+              <fieldset class="relationship-fields country-role-fields">
+                <legend>Роли в других странах <span class="optional">необязательно</span></legend>
+                <p>Страна выше — основная: выбранная группа описывает роль в ней. Для другой точки зрения добавьте отдельную роль. Человек может быть правителем нескольких стран.</p>
+
+                <div v-for="(role, index) in form.countryRoles" :key="index" class="country-role-row">
+                  <label>Страна<input
+                    v-model="role.country"
+                    list="person-countries"
+                    maxlength="150"
+                    placeholder="Выберите или введите"
+                    required
+                  ></label>
+
+                  <label>Роль<select v-model="role.group"><option v-for="group in groups" :key="group.id" :value="group.id">{{ group.label }}</option></select></label>
+                  <button aria-label="Удалить роль в стране" type="button" @click="form.countryRoles.splice(index, 1)"><i class="mdi mdi-close" /></button>
+                </div>
+
+                <button class="add-relation-button" :disabled="form.countryRoles.length >= 100" type="button" @click="form.countryRoles.push({ country: '', group: 'contemporaries' })"><i class="mdi mdi-plus" />Добавить страну и роль</button>
+              </fieldset>
+
               <fieldset class="relationship-fields family-fields">
                 <legend>Семья <span class="optional">необязательно</span></legend>
                 <p>Выберите мать, отца и супруга или супругу текущей персоны. Каждое поле можно оставить пустым.</p>
+
+                <label class="checkbox-label"><input v-model="includeUnknownGender" type="checkbox"> Включать в поиск персон с неуказанным полом</label>
 
                 <div class="family-pickers">
                   <div v-for="slot in familySlots" :key="slot.key" class="family-picker">
                     <PersonPicker
                       :disabled="saving"
-                      :label="slot.label"
+                      :label="slot.key === 'spouse' ? form.gender === 'male' ? 'Супруга' : form.gender === 'female' ? 'Супруг' : slot.label : slot.label"
                       :model-value="family[slot.key].personId"
-                      :people="relatedPeople"
+                      :people="familyCandidates(slot.key)"
                       @update:model-value="setFamilyMember(slot.key, $event)"
                     />
 
@@ -709,13 +805,13 @@
                     @click="form.patronymic = suggestion"
                   >{{ suggestion }}</button>
 
-                  <small>Выберите подходящий вариант. Поле «Отчество» также можно заполнить вручную.</small>
+                  <small>Поле «Отчество» можно исправить вручную. При указанном поле персоны подходящий вариант подставляется автоматически.</small>
                 </div>
               </fieldset>
 
               <fieldset class="relationship-fields">
                 <legend>Дополнительные связи <span class="optional">необязательно</span></legend>
-                <p id="relationship-direction">Роль относится к {{ formFullName || 'текущей персоне' }}. Например, добавляя ребёнка в карточку отца, выберите роль «Отец». Можно добавить несколько связей.</p>
+                <p id="relationship-direction">Роль относится к {{ formFullName || 'текущей персоне' }}. Например, в карточке отца выберите «Отец», а затем ребёнка. Для «Муж» выбирается женщина, для «Жена» — мужчина. Пол ребёнка или другого родственника можно уточнить отдельно.</p>
                 <div v-if="form.group === 'close'" class="service-help"><strong>Чьим сподвижником был этот человек?</strong><p>Добавьте каждого правителя отдельной связью и укажите годы службы. Периоды могут пересекаться; неизвестные даты оставьте пустыми.</p><button class="add-relation-button" :disabled="!relatedPeople.some(person => person.group === 'rulers')" type="button" @click="form.relations.push({ personId: '', role: 'Сподвижник' })"><i class="mdi mdi-crown-outline" />Добавить правителя и период службы</button></div>
 
                 <div v-for="(relation, index) in form.relations" :key="index" class="relationship-row">
@@ -725,20 +821,31 @@
                     v-model="relation.personId"
                     :disabled="saving"
                     :label="relation.role.trim().toLocaleLowerCase('ru') === 'сподвижник' ? 'При каком правителе' : 'Другая персона атласа'"
-                    :people="relatedPeople.filter(person => relation.role.trim().toLocaleLowerCase('ru') !== 'сподвижник' || person.group === 'rulers' || person.id === relation.personId)"
+                    :people="relationCandidates(relation)"
                     required
                   />
 
-                  <label>Роль текущей персоны
-                    <input
-                      v-model="relation.role"
-                      aria-describedby="relationship-direction"
-                      list="relationship-roles"
-                      maxlength="100"
-                      placeholder="Выберите или напишите: сын, брат…"
-                      required
-                    >
-                  </label>
+                  <div class="relation-role-field">
+                    <label>Роль текущей персоны
+                      <input
+                        v-model="relation.role"
+                        aria-describedby="relationship-direction"
+                        list="relationship-roles"
+                        maxlength="100"
+                        placeholder="Выберите или напишите: сын, брат…"
+                        required
+                      >
+                    </label>
+
+                    <label>Пол выбираемой персоны
+                      <select
+                        aria-label="Пол выбираемой персоны"
+                        :disabled="relationTargetGender(relation.role, form.gender) !== 'unknown'"
+                        :value="relationGenderFilter(relation)"
+                        @change="relationGenderFilters.set(relation, ($event.target as HTMLSelectElement).value as Gender)"
+                      ><option value="unknown">Любой</option><option value="male">Мужской</option><option value="female">Женский</option></select>
+                    </label>
+                  </div>
 
                   <div class="relation-period"><label>Начало связи / службы<input
                                                  max="2100"
@@ -781,3 +888,9 @@
     <v-snackbar color="#d1b57f" :model-value="!!toast" :timeout="3500" @update:model-value="toast = ''">{{ toast }}</v-snackbar>
   </v-app>
 </template>
+
+<style scoped>
+  .country-role-row { display: grid; grid-template-columns: 1fr 1fr 32px; align-items: end; gap: 12px; margin: 16px 0; }
+  .country-role-row > button { height: 42px; color: #b9ac93; }
+  @media (max-width: 500px) { .country-role-row { grid-template-columns: 1fr 32px; } .country-role-row label { grid-column: 1; } .country-role-row > button { grid-column: 2; grid-row: 1 / 3; align-self: center; } }
+</style>

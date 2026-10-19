@@ -8,6 +8,25 @@ def payload(**changes):
     return dict(name="Иван", firstName="Иван", start=1380, end=1450, group="family", **changes)
 
 
+def test_gender_persists_updates_and_round_trips_through_import(client):
+    assert client.get("/api/people/dmitry").json()["gender"] == "unknown"
+    response = client.post("/api/people", json=payload(gender="male"))
+    assert response.status_code == 201, response.text
+    id_ = response.json()["id"]
+    assert client.get(f"/api/people/{id_}").json()["gender"] == "male"
+    updated = client.put(f"/api/people/{id_}", json=payload(gender="female"))
+    assert updated.json()["gender"] == "female"
+    exported = client.get("/api/people").json()
+    assert client.post("/api/people/import", json={"people": exported}).status_code == 200
+    assert client.get(f"/api/people/{id_}").json()["gender"] == "female"
+
+
+@pytest.mark.parametrize("gender", ["invalid", "", None, 1])
+def test_invalid_gender_does_not_write(client, gender):
+    assert client.post("/api/people", json=payload(gender=gender)).status_code == 422
+    assert len(client.get("/api/people").json()) == 9
+
+
 def test_family_relations_persist_export_and_clear(client):
     relations = [{"personId": "dmitry", "role": "Ребёнок", "familyRole": "father"}]
     response = client.post("/api/people", json=payload(relations=relations))
@@ -204,3 +223,35 @@ def test_unknown_service_dates_stay_unknown(client, period):
     response = client.post("/api/people", json=payload(relations=[relation]))
     assert response.status_code == 201, response.text
     assert response.json()["relations"] == [relation]
+
+
+def test_country_roles_persist_round_trip_and_allow_multiple_rulerships(client):
+    roles = [
+        {"country": "Русь / Россия", "group": "contemporaries"},
+        {"country": "Польша", "group": "rulers"},
+    ]
+    data = {**payload(country="Литва", countryRoles=roles), "group": "rulers"}
+    response = client.post("/api/people", json=data)
+    assert response.status_code == 201, response.text
+    person = response.json()
+    assert person["countryRoles"] == roles
+    assert client.get(f"/api/people/{person['id']}").json()["countryRoles"] == roles
+    exported = client.get("/api/people").json()
+    assert client.post("/api/people/import", json={"people": exported}).status_code == 200
+    assert client.get(f"/api/people/{person['id']}").json()["countryRoles"] == roles
+    person["countryRoles"] = []
+    person.pop("id")
+    updated = client.put(f"/api/people/{response.json()['id']}", json=person)
+    assert updated.json()["countryRoles"] == []
+
+
+@pytest.mark.parametrize("roles", [
+    [{"country": "", "group": "rulers"}],
+    [{"country": "Русь", "group": "invalid"}],
+    [{"country": " литва ", "group": "family"}],
+    [{"country": "Русь", "group": "rulers"}, {"country": " РУСЬ ", "group": "family"}],
+])
+def test_invalid_country_roles_do_not_write(client, roles):
+    response = client.post("/api/people", json=payload(country="Литва", countryRoles=roles))
+    assert response.status_code == 422
+    assert len(client.get("/api/people").json()) == 9

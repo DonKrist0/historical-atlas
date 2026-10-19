@@ -17,7 +17,9 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test:graph": "node --experimental-strip-types --test tests/graph.test.mjs",
-    "test:family": "node --experimental-strip-types --test tests/familyForm.test.mjs"
+    "test:family": "node --experimental-strip-types --test tests/familyForm.test.mjs",
+    "test:gender": "node --experimental-strip-types --test tests/gender.test.mjs",
+    "test:countries": "node --experimental-strip-types --test tests/countries.test.mjs"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",

@@ -12,9 +12,9 @@ export function firstRegionRoot (people: Person[], region: string): Person | und
   return candidates.find(person => person.group === 'rulers') ?? candidates[0]
 }
 
-export function buildRelationsGraph (people: Person[], rootId?: string, options: { includeContext?: boolean, grouped?: boolean } = {}) {
+export function buildRelationsGraph (people: Person[], rootId?: string, options: { includeContext?: boolean, grouped?: boolean, sameCountryPerspective?: boolean } = {}) {
   const root = people.find(person => person.id === rootId) ?? firstRegionRoot(people, '*')
-  const { edges, missingLinks, explicitCount } = collectGraphRelations(people, options.includeContext ?? true)
+  const { edges, missingLinks, explicitCount } = collectGraphRelations(people, options.includeContext ?? true, options.sameCountryPerspective ?? false)
   const { levels, warnings } = assignGenerations(people, edges, root?.id)
   combineParentEdges(edges)
   const layout = layoutGenerations(people, edges, levels, root?.id, options.grouped ?? true)

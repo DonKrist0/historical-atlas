@@ -1,4 +1,10 @@
 export type GroupId = 'rulers' | 'family' | 'close' | 'contemporaries' | 'clergy'
+export type Gender = 'male' | 'female' | 'unknown'
+
+export interface CountryRole {
+  country: string
+  group: GroupId
+}
 
 export interface PersonRelation {
   personId: string
@@ -14,7 +20,9 @@ export interface Person {
   firstName?: string
   lastName?: string
   patronymic?: string
+  gender?: Gender
   country?: string
+  countryRoles?: CountryRole[]
   region?: string
   dynasty?: string
   start: number

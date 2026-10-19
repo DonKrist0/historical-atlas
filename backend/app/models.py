@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -52,12 +53,14 @@ class Person(Base):
     first_name: Mapped[str | None] = mapped_column(String(150))
     last_name: Mapped[str | None] = mapped_column(String(100))
     patronymic: Mapped[str | None] = mapped_column(String(100))
+    gender: Mapped[str] = mapped_column(String(10), default="unknown", server_default="unknown")
     country: Mapped[str | None] = mapped_column(String(150))
     region: Mapped[str | None] = mapped_column(String(150))
     dynasty: Mapped[str | None] = mapped_column(String(150))
     start: Mapped[int] = mapped_column(Integer)
     end: Mapped[int] = mapped_column(Integer)
     group: Mapped[str] = mapped_column(String(30))
+    country_roles: Mapped[list[dict]] = mapped_column(JSON, default=list, server_default="[]")
     note: Mapped[str] = mapped_column(String(150), default="")
     biography: Mapped[str] = mapped_column(Text, default="")
     sources: Mapped[str] = mapped_column(Text, default="", server_default="")

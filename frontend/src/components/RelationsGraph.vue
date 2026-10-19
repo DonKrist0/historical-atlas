@@ -1,11 +1,12 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { groups, type Person } from '../data/people'
+  import { scopeRelations } from '../utils/countries'
   import { buildRelationsGraph, firstRegionRoot, graphNameLines, NODE_HEIGHT, NODE_WIDTH } from '../utils/graph'
   import { isBundledEdge } from '../utils/graphRules'
   import { relationPeriod } from '../utils/relationPeriod'
 
-  const props = defineProps<{ people: Person[], genealogy?: boolean, canEdit?: boolean }>()
+  const props = defineProps<{ people: Person[], collection?: Person[], perspective?: string, genealogy?: boolean, canEdit?: boolean }>()
   const emit = defineEmits<{ edit: [person: Person] }>()
   const region = ref('*')
   const rootId = ref('')
@@ -27,7 +28,7 @@
   const regions = computed(() => [...new Set(props.people.map(person => person.region?.trim()).filter((value): value is string => !!value))].sort((a, b) => a.localeCompare(b, 'ru')))
   const regionPeople = computed(() => props.people.filter(person => region.value === '*' || (person.region?.trim() ?? '') === region.value))
   const root = computed(() => regionPeople.value.find(person => person.id === rootId.value) ?? firstRegionRoot(props.people, region.value))
-  const graph = computed(() => buildRelationsGraph(props.people, root.value?.id, { includeContext: !props.genealogy && includeContext.value, grouped: grouped.value }))
+  const graph = computed(() => buildRelationsGraph(scopeRelations(props.people, props.collection ?? props.people), root.value?.id, { includeContext: !props.genealogy && includeContext.value, grouped: grouped.value, sameCountryPerspective: props.perspective !== undefined }))
   const visibleEdges = computed(() => graph.value.edges.filter(edge => !edge.hidden))
   const selected = computed(() => props.people.find(person => person.id === selectedId.value))
   const activeId = computed(() => hoveredId.value || selectedId.value)
@@ -118,6 +119,10 @@
     camera.value = { ...camera.value, x: camera.value.x + offset[0], y: camera.value.y + offset[1] }
   }
 
+  watch(regions, values => {
+    if (region.value !== '*' && region.value !== '' && !values.includes(region.value)) region.value = '*'
+    if (!props.people.some(person => person.id === rootId.value)) rootId.value = ''
+  })
   watch(region, () => {
     rootId.value = ''
   })

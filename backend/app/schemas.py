@@ -37,17 +37,24 @@ class Relation(ApiModel):
         return self
 
 
+class CountryRole(ApiModel):
+    country: str = Field(min_length=1, max_length=150)
+    group: GroupId
+
+
 class PersonInput(ApiModel):
     name: str = Field(min_length=1, max_length=352)
     first_name: str | None = Field(default=None, max_length=150)
     last_name: str | None = Field(default=None, max_length=100)
     patronymic: str | None = Field(default=None, max_length=100)
+    gender: Literal["male", "female", "unknown"] = "unknown"
     country: str | None = Field(default=None, max_length=150)
     region: str | None = Field(default=None, max_length=150)
     dynasty: str | None = Field(default=None, max_length=150)
     start: int = Field(ge=1, le=2100, strict=True)
     end: int = Field(ge=1, le=2100, strict=True)
     group: GroupId
+    country_roles: list[CountryRole] = Field(default_factory=list, max_length=100)
     note: str = Field(default="", max_length=150)
     biography: str = Field(default="", max_length=100_000)
     sources: str = Field(default="", max_length=5000)
@@ -56,6 +63,11 @@ class PersonInput(ApiModel):
 
     @model_validator(mode="after")
     def validate_person(self) -> Self:
+        countries = [" ".join(item.country.casefold().split()) for item in self.country_roles]
+        if len(countries) != len(set(countries)):
+            raise ValueError("Для каждой страны укажите одну роль персоны.")
+        if " ".join((self.country or "").casefold().split()) in countries:
+            raise ValueError("Роль в основной стране задаётся полем группы персоны.")
         if self.end < self.start:
             raise ValueError("Конец периода должен быть не раньше начала.")
         if self.first_name is not None:

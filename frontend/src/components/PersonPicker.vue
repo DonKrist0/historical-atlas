@@ -1,8 +1,12 @@
 <script setup lang="ts">
   import type { Person } from '../data/people'
+  import { genderLabels } from '../utils/gender'
 
   defineProps<{ people: Person[], label: string, disabled?: boolean, required?: boolean }>()
   const model = defineModel<string>({ required: true })
+  function personTitle (person: Person): string {
+    return `${person.name} (${person.start}–${person.end}) · ${genderLabels[person.gender ?? 'unknown']}`
+  }
 </script>
 
 <template>
@@ -12,7 +16,7 @@
     clearable
     :disabled="disabled"
     hide-details="auto"
-    :item-title="person => `${person.name} (${person.start}–${person.end})`"
+    :item-title="personTitle"
     item-value="id"
     :items="people"
     :label="label"

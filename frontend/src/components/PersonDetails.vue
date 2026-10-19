@@ -2,14 +2,21 @@
   import type { Person } from '../data/people'
   import { computed, ref, watch } from 'vue'
   import { groups } from '../data/people'
+  import { roleForCountry } from '../utils/countries'
+  import { genderLabels } from '../utils/gender'
   import { relationPeriod } from '../utils/relationPeriod'
 
-  const props = defineProps<{ person: Person, people: Person[] }>()
+  const props = defineProps<{ person: Person, people: Person[], viewpoint?: string }>()
   const emit = defineEmits<{ close: [], select: [person: Person] }>()
   const article = ref<HTMLElement | null>(null)
   watch(() => props.person.id, () => article.value?.scrollTo({ top: 0 }), { flush: 'post' })
-  const group = computed(() => groups.find(group => group.id === props.person.group))
+  const group = computed(() => groups.find(group => group.id === (props.viewpoint === undefined ? props.person.group : roleForCountry(props.person, props.viewpoint) ?? props.person.group)))
+  const countryRoles = computed(() => [
+    { country: props.person.country ?? 'Страна не указана', group: props.person.group },
+    ...(props.person.countryRoles ?? []),
+  ].map(role => `${role.country} — ${groups.find(group => group.id === role.group)?.label ?? role.group}`))
   const facts = computed(() => [
+    { label: 'Пол', value: genderLabels[props.person.gender ?? 'unknown'], icon: 'mdi-account-outline' },
     { label: 'Страна', value: props.person.country, icon: 'mdi-earth' },
     { label: 'Регион', value: props.person.region, icon: 'mdi-map-marker-outline' },
     { label: 'Династия', value: props.person.dynasty, icon: 'mdi-family-tree' },
@@ -43,6 +50,8 @@
           <dd>{{ fact.value }}</dd>
         </div>
       </dl>
+
+      <p class="details-role-context">{{ countryRoles.join(' · ') }}</p>
 
       <section class="details-section">
         <h3><span>01</span>Биография</h3>
@@ -93,6 +102,7 @@
   .details-dates small { font-size: 12px; color: #9aa68b; }
   .details-date-note { font-size: 11px; line-height: 1.6; color: #96a087; margin-top: 8px; }
   .details-body { padding: 0 34px 30px; }
+  .details-role-context { color: #b7bdab; font-size: 12px; line-height: 1.8; padding: 12px 0 20px; }
   .details-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; padding: 24px 0; border-top: 1px solid #38432e; }
   dt { display: flex; align-items: center; gap: 6px; color: #8f9b81; font-size: 10px; margin-bottom: 8px; }
   dd { margin: 0; font-size: 13px; line-height: 1.6; color: #d4dcc8; }

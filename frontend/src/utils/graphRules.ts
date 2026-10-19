@@ -137,7 +137,7 @@ export function graphPairKey (a: string, b: string): string {
   return JSON.stringify([a, b].sort())
 }
 
-export function collectGraphRelations (people: Person[], includeContext: boolean) {
+export function collectGraphRelations (people: Person[], includeContext: boolean, sameCountryPerspective = false) {
   const byId = new Map(people.map(person => [person.id, person]))
   const unique = new Map<string, GraphEdge>()
   const explicitPairs = new Set<string>()
@@ -168,7 +168,7 @@ export function collectGraphRelations (people: Person[], includeContext: boolean
   }
   const edges = [...unique.values()]
   if (includeContext) {
-    addContextEdges(people, edges, explicitPairs)
+    addContextEdges(people, edges, explicitPairs, sameCountryPerspective)
     addTemporalEdges(people, edges, explicitPairs)
   }
   return { edges, missingLinks, explicitCount: edges.reduce((sum, edge) => sum + edge.records.length, 0) }
@@ -193,7 +193,7 @@ function addTemporalEdges (people: Person[], edges: GraphEdge[], explicitPairs: 
   }
 }
 
-function addContextEdges (people: Person[], edges: GraphEdge[], explicitPairs: Set<string>) {
+function addContextEdges (people: Person[], edges: GraphEdge[], explicitPairs: Set<string>, sameCountryPerspective: boolean) {
   const rulers = new Set(people.filter(person => person.group === 'rulers').map(person => person.id))
   const assigned = new Set(edges.filter(edge => edge.shape === 'association' || edge.shape === 'service').flatMap(edge => {
     if (rulers.has(edge.source)) {
@@ -216,7 +216,7 @@ function addContextEdges (people: Person[], edges: GraphEdge[], explicitPairs: S
       if (normalizeGraphText(person.region) !== region) {
         continue
       }
-      if (ruler.country && person.country && normalizeGraphText(ruler.country) !== normalizeGraphText(person.country)) {
+      if (!sameCountryPerspective && ruler.country && person.country && normalizeGraphText(ruler.country) !== normalizeGraphText(person.country)) {
         continue
       }
       if (explicitPairs.has(graphPairKey(ruler.id, person.id))) {
