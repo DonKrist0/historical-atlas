@@ -79,8 +79,16 @@
   select { appearance: auto; outline: none; color: inherit; cursor: pointer; }select option { background: #22271e; }
   .zoom-control { display: flex; align-items: center; border-left: 1px solid #3a422f; border-right: 1px solid #3a422f; padding: 0 10px; gap: 9px; }
   .zoom-control button { font-size: 17px; width: 20px; color: #9da98d; }.zoom-control span { font: 9px 'Roboto Mono', monospace; min-width: 35px; text-align: center; }
+  .zoom-control .zoom-reset { width: 54px; padding: 6px 3px; border-radius: 4px; font: 11px 'Roboto Mono', monospace; }
+  .zoom-control .zoom-reset:hover { background: #ffffff0a; color: #d2b780; }
+  .zoom-control button:disabled { opacity: .35; cursor: default; }
+  .zoom-control button:focus-visible { outline: 1px solid #d2b780; outline-offset: 2px; }
   .export-button { font-size: 18px; color: #9da98d; }
   .timeline-scroll { position: relative; height: 555px; overflow: auto; border: 1px solid #343c2d; scrollbar-width: thin; scrollbar-color: #525e42 #1a1e17; background: #191e16; }
+  .timeline-scroll, .timeline-scroll .person-bar { cursor: grab; }
+  .timeline-scroll { user-select: none; overscroll-behavior: contain; }
+  .timeline-scroll.dragging, .timeline-scroll.dragging * { cursor: grabbing; }
+  .timeline-scroll:focus-visible { outline: 1px solid #d2b780; outline-offset: 2px; }
   .timeline-inner { width: 100%; }.lane-headers { display: flex; height: 45px; position: sticky; top: 0; z-index: 4; background: #21271c; border-bottom: 1px solid #3a442f; }
   .year-header { width: 88px; min-width: 88px; position: sticky; left: 0; background: #21271c; z-index: 5; color: #7c8a6c; font: 8px 'Roboto Mono', monospace; display: flex; align-items: center; justify-content: center; gap: 9px; border-right: 1px solid #36402b; }
   .lane-heading { flex-shrink: 0; display: flex; justify-content: center; gap: 8px; align-items: center; font-size: 10px; color: var(--group-color); border-right: 1px solid #34402b; }.lane-heading .mdi { font-size: 15px; }.lane-heading small { font: 8px 'Roboto Mono', monospace; opacity: .6; margin-left: 3px; }

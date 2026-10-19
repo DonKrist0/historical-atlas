@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
   import { authApi, type Identity } from './api/auth'
   import { peopleApi } from './api/people'
   import GenealogyPage from './components/GenealogyPage.vue'
@@ -150,7 +150,8 @@
   })
   const query = ref('')
   const enabled = ref<GroupId[]>(groups.map(g => g.id))
-  const zoom = ref(22)
+  const zoom = ref(100)
+  const yearHeight = 22
   const period = computed(() => collectionPeriod(people.value))
   const range = ref('Все годы')
   const startYear = computed(() => range.value === 'Все годы' ? period.value.start ?? 1 : Number(range.value.split('–', 1)[0]))
@@ -191,6 +192,63 @@
   const formError = ref('')
   const toast = ref('')
   const timeline = ref<HTMLElement | null>(null)
+  const timelineDragging = ref(false)
+  let panStart: { pointerId: number, x: number, y: number, left: number, top: number } | null = null
+  let suppressTimelineClick = false
+  async function setTimelineZoom (value: number, anchor?: { x: number, y: number }) {
+    const next = Math.max(25, Math.min(200, value))
+    if (next === zoom.value) return
+    const element = timeline.value
+    const x = anchor?.x ?? (element?.clientWidth ?? 0) / 2
+    const y = anchor?.y ?? (element?.clientHeight ?? 0) / 2
+    const ratio = next / zoom.value
+    const left = ((element?.scrollLeft ?? 0) + x) * ratio - x
+    const top = ((element?.scrollTop ?? 0) + y) * ratio - y
+    zoom.value = next
+    await nextTick()
+    element?.scrollTo({ left, top })
+  }
+  function timelineWheel (event: WheelEvent) {
+    if (!event.ctrlKey && !event.metaKey) return
+    event.preventDefault()
+    if (event.deltaY === 0) return
+    const bounds = timeline.value!.getBoundingClientRect()
+    void setTimelineZoom(zoom.value + (event.deltaY < 0 ? 5 : -5), { x: event.clientX - bounds.left, y: event.clientY - bounds.top })
+  }
+  function startTimelinePan (event: PointerEvent) {
+    suppressTimelineClick = false
+    if (event.pointerType === 'touch' || event.button !== 0 || !timeline.value) return
+    const target = event.target as HTMLElement
+    if (target.closest('button:not(.person-bar), input, select, a')) return
+    // Ignore native scrollbar interaction.
+    const bounds = timeline.value.getBoundingClientRect()
+    if (event.clientX - bounds.left >= timeline.value.clientWidth || event.clientY - bounds.top >= timeline.value.clientHeight) return
+    panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: timeline.value.scrollLeft, top: timeline.value.scrollTop }
+  }
+  function moveTimelinePan (event: PointerEvent) {
+    if (!panStart || panStart.pointerId !== event.pointerId || !timeline.value) return
+    const dx = event.clientX - panStart.x
+    const dy = event.clientY - panStart.y
+    if (!timelineDragging.value && Math.hypot(dx, dy) < 5) return
+    timelineDragging.value = true
+    suppressTimelineClick = true
+    timeline.value.setPointerCapture(event.pointerId)
+    timeline.value.scrollLeft = panStart.left - dx
+    timeline.value.scrollTop = panStart.top - dy
+    event.preventDefault()
+  }
+  function stopTimelinePan (event: PointerEvent) {
+    if (panStart?.pointerId !== event.pointerId) return
+    panStart = null
+    timelineDragging.value = false
+    if (timeline.value?.hasPointerCapture(event.pointerId)) timeline.value.releasePointerCapture(event.pointerId)
+  }
+  function timelineClick (event: MouseEvent) {
+    if (!suppressTimelineClick || event.detail === 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    suppressTimelineClick = false
+  }
   type Page = 'overview' | 'timeline' | 'people' | 'relations' | 'genealogy'
   function pageFromHash (): Page {
     if (window.location.hash === '#/genealogy') return 'genealogy'
@@ -308,7 +366,7 @@
     }
   }
   function barStyle (person: Person) {
-    return { top: `${(Math.max(person.start, startYear.value) - startYear.value) * zoom.value + 2}px`, height: `${Math.max(3, (Math.min(person.end, endYear.value) - Math.max(person.start, startYear.value) + 1) * zoom.value - 4)}px` }
+    return { top: `${(Math.max(person.start, startYear.value) - startYear.value) * yearHeight + 2}px`, height: `${Math.max(3, (Math.min(person.end, endYear.value) - Math.max(person.start, startYear.value) + 1) * yearHeight - 4)}px` }
   }
   function exportData () {
     const url = URL.createObjectURL(new Blob([JSON.stringify(people.value, null, 2)], { type: 'application/json' }))
@@ -409,7 +467,7 @@
 
         <section v-else aria-label="Исторический атлас" class="atlas-section">
           <div class="section-heading"><div><span class="section-number">01</span><h2>{{ activeNav === 'timeline' ? 'Шкала времени' : 'Коллекция персон' }}</h2><span class="count-badge">{{ people.length }} персон</span></div><button v-if="canEdit" class="primary-button" @click="openForm"><i aria-hidden="true" class="mdi mdi-plus" />Добавить персону</button></div>
-          <div class="chart-toolbar"><label class="search-field"><i aria-hidden="true" class="mdi mdi-magnify" /><input v-model="query" aria-label="Найти персону" placeholder="Найти персону…"><button v-if="query" aria-label="Очистить поиск" @click="query = ''">×</button><span v-else class="search-shortcut">⌕</span></label><div class="toolbar-options"><label class="range-select"><i aria-hidden="true" class="mdi mdi-calendar-range-outline" /><select v-model="range" aria-label="Период"><option value="Все годы">Все годы{{ collectionStart !== null ? ` · ${collectionStart}–${collectionEnd}` : '' }}</option><option v-for="item in period.centuries" :key="item.start" :value="`${item.start}–${item.end}`">{{ item.label }} · {{ item.start }}–{{ item.end }}</option></select></label><div class="zoom-control"><button aria-label="Уменьшить масштаб" :disabled="zoom <= 12" @click="zoom = Math.max(12, zoom - 5)">−</button><span>{{ Math.round(zoom / 22 * 100) }}%</span><button aria-label="Увеличить масштаб" :disabled="zoom >= 52" @click="zoom = Math.min(52, zoom + 5)">+</button></div><button aria-label="Выгрузить данные" class="export-button" title="Выгрузить JSON" @click="exportData"><i aria-hidden="true" class="mdi mdi-tray-arrow-down" /></button></div></div>
+          <div class="chart-toolbar"><label class="search-field"><i aria-hidden="true" class="mdi mdi-magnify" /><input v-model="query" aria-label="Найти персону" placeholder="Найти персону…"><button v-if="query" aria-label="Очистить поиск" @click="query = ''">×</button><span v-else class="search-shortcut">⌕</span></label><div class="toolbar-options"><label class="range-select"><i aria-hidden="true" class="mdi mdi-calendar-range-outline" /><select v-model="range" aria-label="Период"><option value="Все годы">Все годы{{ collectionStart !== null ? ` · ${collectionStart}–${collectionEnd}` : '' }}</option><option v-for="item in period.centuries" :key="item.start" :value="`${item.start}–${item.end}`">{{ item.label }} · {{ item.start }}–{{ item.end }}</option></select></label><div v-if="activeNav === 'timeline'" aria-label="Масштаб диаграммы" class="zoom-control" role="group"><button aria-label="Уменьшить масштаб" :disabled="zoom <= 25" @click="setTimelineZoom(zoom - 25)">−</button><button aria-label="Сбросить масштаб на 100%" class="zoom-reset" title="Сбросить масштаб на 100%" @click="setTimelineZoom(100)">{{ zoom }}%</button><button aria-label="Увеличить масштаб" :disabled="zoom >= 200" @click="setTimelineZoom(zoom + 25)">+</button></div><button aria-label="Выгрузить данные" class="export-button" title="Выгрузить JSON" @click="exportData"><i aria-hidden="true" class="mdi mdi-tray-arrow-down" /></button></div></div>
 
           <div aria-label="Фильтры групп" class="mobile-filters"><button
             v-for="group in groups"
@@ -420,17 +478,31 @@
           ><span class="color-dot" :style="{ background: group.color }" />{{ group.label }}</button></div>
 
           <template v-if="activeNav === 'timeline'">
-            <div ref="timeline" class="timeline-scroll">
-              <div class="timeline-inner" :style="{ minWidth: chartWidth }">
+            <div
+              ref="timeline"
+              aria-label="Шкала времени. Перетаскивайте для перемещения, Ctrl + колесо — масштаб."
+              class="timeline-scroll"
+              :class="{ dragging: timelineDragging }"
+              role="region"
+              tabindex="0"
+              @click.capture="timelineClick"
+              @lostpointercapture="stopTimelinePan"
+              @pointercancel="stopTimelinePan"
+              @pointerdown="startTimelinePan"
+              @pointermove="moveTimelinePan"
+              @pointerup="stopTimelinePan"
+              @wheel="timelineWheel"
+            >
+              <div class="timeline-inner" :style="{ minWidth: chartWidth, width: `${10000 / zoom}%`, zoom: zoom / 100 }">
                 <div class="lane-headers"><div class="year-header">ГОД <i aria-hidden="true" class="mdi mdi-arrow-down" /></div><div v-for="group in lanes" :key="group.id" class="lane-heading" :style="{ width: `${Math.max(group.columns.length, 1) * 128}px`, '--group-color': group.color }"><i aria-hidden="true" :class="`mdi ${group.icon}`" /><span>{{ group.label }}</span><small>{{ group.people.length }}</small></div></div>
 
-                <div class="timeline-body" :style="{ height: `${years.length * zoom}px`, '--year-height': `${zoom}px` }">
+                <div class="timeline-body" :style="{ height: `${years.length * yearHeight}px`, '--year-height': `${yearHeight}px` }">
                   <div
                     v-for="year in years"
                     :key="year"
                     class="year-row"
                     :class="{ decade: year % 10 === 0 }"
-                    :style="{ top: `${(year - startYear) * zoom}px`, height: `${zoom}px` }"
+                    :style="{ top: `${(year - startYear) * yearHeight}px`, height: `${yearHeight}px` }"
                   ><span>{{ year }}</span></div>
 
                   <div class="person-lanes"><div
@@ -468,7 +540,7 @@
               <div v-if="shown.length === 0" class="empty-results">Персоны не найдены. Измените поиск или включите группы слева.</div>
             </div>
 
-            <div class="chart-footer"><span><span class="footer-line" /> Одна строка — один год жизни</span><span><i aria-hidden="true" class="mdi mdi-mouse" /> Прокрутите, чтобы путешествовать во времени</span><button @click="timeline?.scrollTo({ top: 0, behavior: 'smooth' })">К началу <i aria-hidden="true" class="mdi mdi-arrow-up" /></button></div>
+            <div class="chart-footer"><span><span class="footer-line" /> Одна строка — один год жизни</span><span><i aria-hidden="true" class="mdi mdi-mouse" /> Перетаскивайте диаграмму · Ctrl + колесо — масштаб</span><button @click="timeline?.scrollTo({ top: 0, behavior: 'smooth' })">К началу <i aria-hidden="true" class="mdi mdi-arrow-up" /></button></div>
           </template>
 
           <div v-else class="people-grid"><button v-for="person in shown" :key="person.id" class="person-card" @click="editPerson(person)"><span class="color-dot" :style="{ background: groups.find(g => g.id === person.group)?.color }" /><strong>{{ person.name }}</strong><span>{{ person.before ? 'до ' : '' }}{{ person.start }} — {{ person.end }}</span><small>{{ person.note }}</small><i aria-hidden="true" :class="canEdit ? 'mdi mdi-pencil-outline' : 'mdi mdi-eye-outline'" /></button><p v-if="shown.length === 0" class="empty-results">По вашему запросу никого не найдено.</p></div>
